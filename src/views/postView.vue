@@ -51,7 +51,10 @@ import { posts, getTagColor } from '../posts/list.js';
 import typeWord from '../components/typeWord.vue';
 import tagBase from '@/components/tagBase.vue';
 import { router } from '@/router/index'; 
-import { marked } from 'marked'; // Import marked
+import { marked } from 'marked'; 
+
+import hljs from 'highlight.js'; // 导入 highlight.js
+import 'highlight.js/styles/github-dark.css'; // 导入高亮样式
 
 export default {
     name: 'postView', 
@@ -67,21 +70,47 @@ export default {
         }
     },
     computed: {
-        safeContent() {
-        // Use marked to convert Markdown to HTML before sanitizing
-        return DOMPurify.sanitize(marked.parse(this.postContent || ''));
-        }
+      safeContent() {
+            // === 关键修改：直接在 parse 时传入 options ===
+            marked.setOptions({ // 再次设置，确保万无一失，或者直接在这里定义并传入
+                langPrefix: 'hljs language-', // highlight.js 的类名前缀
+                highlight: function(code, lang) {
+                    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                    try {
+                        return hljs.highlight(code, { language }).value;
+                    } catch (error) {
+                        console.error('Highlight.js error:', error);
+                        return code;
+                    }
+                }
+            });
+            // 或者更直接地传入选项到 parse 方法 (marked v4.0.0+ 支持)
+            // return DOMPurify.sanitize(marked.parse(this.postContent || '', {
+            //     langPrefix: 'hljs language-',
+            //     highlight: function(code, lang) {
+            //         const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+            //         try {
+            //             return hljs.highlight(code, { language }).value;
+            //         } catch (error) {
+            //             console.error('Highlight.js error:', error);
+            //             return code;
+            //         }
+            //     }
+            // }));
+            // === 结束修改 ===
+
+            // 使用 marked 将 Markdown 转换为 HTML 后再进行净化
+            return DOMPurify.sanitize(marked.parse(this.postContent || ''));
+      },
     },
     async mounted() {
         const post = posts.find(p => p.id === Number(this.$route.params.id)); 
         if (post?.pagePath) {
           console.log(post.pagePath); 
-          // Change the import to expect a .md file
-          // Note: Vite can directly import .md files as strings.
-          const contentModule = await import(`../posts/${post.pagePath}.md`);
+          const contentModule = await import(`../posts/${post.pagePath}.md`); 
           this.post = post; 
           console.log(this.post); 
-          this.postContent = contentModule.default; // .md?raw imports the file content as a string
+          this.postContent = contentModule.default; 
         } else {
           router.push({name: "404"}); 
         }
@@ -125,5 +154,26 @@ export default {
   background-color: rgb(37, 45, 56); 
   box-shadow: 4px 4px 20px #101418;
   padding: 40px 60px 40px 60px; 
+}
+
+/* --- 代码块和行内代码的基础样式 (保持不变) --- */
+.content-container pre {
+    background-color: #2b2b2b;
+    padding: 1em;
+    border-radius: 5px;
+    overflow-x: auto;
+    line-height: 1.5;
+}
+
+.content-container code {
+    font-family: 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace; 
+    font-size: 0.9em;
+}
+
+.content-container p code {
+    background-color: rgba(118, 118, 128, 0.24);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
 }
 </style>
