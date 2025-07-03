@@ -9,7 +9,7 @@
       <div v-for='post in posts' :key="post.id" class="container" @click="openPost(post.id)">
             <postCard class="postCard">
               <template v-if="post.has_img" #has_img>
-                <img class='my-card-img' src="https://demo.stack.jimmycai.com/p/hello-world/cover_hu3425483315149503896.jpg" alt="">
+                <img class='my-card-img' :src="post.img" alt="">
               </template>
 
               <template #tags>
@@ -19,7 +19,7 @@
               </template>
 
               <template #header>
-                {{ post.header }}
+                {{ post.name }}
               </template>
 
               {{ post.summary }}
@@ -32,6 +32,11 @@
     </div>
     <div class="col-1">
       
+    </div>
+    <div class="footer" style='height: 100px'>
+      <div class="copyright">
+        © 2025 powered AWAY
+      </div>
     </div>
 
   </div>

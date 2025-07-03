@@ -1,7 +1,7 @@
 <template>
 
   <div class="home-container">
-    <!-- 新增背景容器 -->
+
     <div class="background-wrapper">
       <MagneticBackground/>
     </div>
@@ -12,7 +12,6 @@
         <p class="subtitle" style="font-weight: border;">developing ....</p>
       </div>
       
-      
 
     </div>
 
@@ -21,16 +20,15 @@
 </template>
 
 <script>
-// 确保导入路径正确，根据您的实际文件结构调整
-// 假设 Home.vue 在 src/views/，MagneticBackground.vue 在 src/components/
+
 import MagneticBackground from '../components/MagneticBackgroud.vue'; 
 
 export default {
-  name: 'HomeView', // 建议使用 'HomeView' 来区分主页组件
+  name: 'HomeView', 
   components: {
-    MagneticBackground, // 注册组件以便在模板中使用
+    MagneticBackground, 
   },
-  // HomeView 组件本身的逻辑可以在这里添加
+
 };
 </script>
 
@@ -39,7 +37,7 @@ export default {
   padding-top: 50px; 
   position: relative;
   min-height: 100vh;
-  overflow: hidden; /* 新增：隐藏溢出背景 */
+  overflow: hidden;
 }
 
 .background-wrapper {
@@ -51,7 +49,7 @@ export default {
 
 .content-layer {
   position: relative;
-  z-index: 1;  /* 确保内容在上层 */
+  z-index: 1;  
 }
 
 .welcome-banner {
@@ -62,7 +60,7 @@ export default {
 
 .cyber-glow.typewriter {
   overflow: hidden; 
-  border-right: 2px solid #20c997; /* 光标颜色 */
+  border-right: 2px solid #20c997; 
   white-space: nowrap;
   animation: 
     typing 1.2s steps(12, end),
@@ -87,7 +85,7 @@ export default {
   color: #20c997;
   text-shadow: 0 0 15px rgba(32, 201, 151, 0.4);
   font-size: 2.5rem;
-  display: inline-block; /* 新增 */
+  display: inline-block; 
 }
 
 .subtitle {

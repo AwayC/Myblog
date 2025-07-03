@@ -5,7 +5,6 @@
 </template>
 
 <script>
-// 确保您的项目已安装 gsap: npm install gsap
 import gsap from 'gsap'; 
 
 export default {
@@ -26,9 +25,7 @@ export default {
     };
   },
   mounted() {
-    // 组件挂载后，初始化磁性动画
-    // 使用 $refs 是一种更推荐的方式来获取 DOM 元素，但在这种情况下，
-    // this.$el.querySelector(".magnetic-svg") 也能工作，因为 SVG 是本组件的直接子元素。
+    //初始化
     this.magnetic.container = this.$el.querySelector(".magnetic-svg"); 
     this.initMagnetic();
 

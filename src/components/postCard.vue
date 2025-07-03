@@ -54,12 +54,12 @@ export default {
     border-radius: 20px;
     background-color: #2d2d2d;
     color: #e0e0e0; 
-    box-shadow: 4px 4px 20px rgb(12, 12, 12); /* 修正分隔符 */
+    box-shadow: 4px 4px 20px rgb(12, 12, 12); 
     overflow: hidden; 
-    transition: 0.5s; /* 可选：添加过渡效果 */
+    transition: 0.5s; 
 }
 
-/* 可选悬停效果 */
+
 .my-card:hover {
     transform: translateY(-3px);
     box-shadow: 4px 4px 20px rgb(5, 73, 70); 

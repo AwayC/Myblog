@@ -12,14 +12,14 @@
       <div class="date">
         <span class="calender">
           <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="24" height="24" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z"></path>
-                    <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4"></path>
-                    <circle cx="18" cy="18" r="4"></circle>
-                    <path d="M15 3v4"></path>
-                    <path d="M7 3v4"></path>
-                    <path d="M3 11h16"></path>
-                    <path d="M18 16.496v1.504l1 1"></path>
-                    </svg>
+            <path stroke="none" d="M0 0h24v24H0z"></path>
+            <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4"></path>
+            <circle cx="18" cy="18" r="4"></circle>
+            <path d="M15 3v4"></path>
+            <path d="M7 3v4"></path>
+            <path d="M3 11h16"></path>
+            <path d="M18 16.496v1.504l1 1"></path>
+            </svg>
         </span>
         <span class="time">{{ post.time }}</span>
       </div>
@@ -50,7 +50,8 @@ import DOMPurify from 'dompurify';
 import { posts, getTagColor } from '../posts/list.js';
 import typeWord from '../components/typeWord.vue';
 import tagBase from '@/components/tagBase.vue';
-import {router} from '@/router/index'; 
+import { router } from '@/router/index'; 
+import { marked } from 'marked'; // Import marked
 
 export default {
     name: 'postView', 
@@ -67,18 +68,20 @@ export default {
     },
     computed: {
         safeContent() {
-        return DOMPurify.sanitize(this.postContent?.content || '')
+        // Use marked to convert Markdown to HTML before sanitizing
+        return DOMPurify.sanitize(marked.parse(this.postContent || ''));
         }
     },
     async mounted() {
         const post = posts.find(p => p.id === Number(this.$route.params.id)); 
         if (post?.pagePath) {
           console.log(post.pagePath); 
-          console.log(`../posts/hello-world/${post.pagePath}.json`); 
-          const contentModule = await import(/* @vite-ignore */ `../posts/${post.pagePath}.json`); 
+          // Change the import to expect a .md file
+          // Note: Vite can directly import .md files as strings.
+          const contentModule = await import(`../posts/${post.pagePath}.md`);
           this.post = post; 
           console.log(this.post); 
-          this.postContent = contentModule.default
+          this.postContent = contentModule.default; // .md?raw imports the file content as a string
         } else {
           router.push({name: "404"}); 
         }
