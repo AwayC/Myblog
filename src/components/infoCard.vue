@@ -35,9 +35,40 @@
                     Away真的逊了
                 </a>
             </div>
+            <div class="blogroll-container">
+                    <div class="blogroll-title cyber-text">
+                        blogroll
+                    </div>
+                    <div v-for="blog in blogs" class="blogroll" :key="blog.id">
+                        <a :href="blog.link" target="_blank" rel="noopener noreferrer">
+                            <blogRoll>
+                                {{ blog.name }}
+                            </blogRoll>
+                        </a>
+                    </div>
+                </div>
         </div>
     </div>
 </template>
+
+<script>
+
+import blogRoll from './blogRoll.vue'; 
+import {blogs} from '../blogroll/list.js'; 
+
+export default {
+    name: 'infoCard',
+    components: {
+        blogRoll
+    }, 
+    setup() { 
+        return { 
+            blogs, 
+        }; 
+    }
+}
+
+</script>
 
 <style scoped>
 .my-card {
@@ -111,4 +142,21 @@
 .github-icon { 
     transform: translateY(-2px); 
 }
+
+.blogroll-container { 
+    margin-top: 10px; 
+}
+
+.blogroll a{ 
+    color: #8a8a8a;
+    font-size: 0.9rem; 
+    text-decoration: none;
+    transition: all 0.5s ease;
+}
+
+.blogroll a:hover { 
+    color: #b9dd1b;
+}
+
+
 </style>
