@@ -9,10 +9,17 @@
     <div class="content-layer">
       <div class="welcome-banner">
         <h1 class="cyber-glow typewriter">AWAY's Studio</h1>
-        <p class="subtitle" style="font-weight: border;">developing ....</p>
+        <p class="subtitle" style="font-weight: border;">developing ...</p>
       </div>
       
-
+      <div class="post-link">
+        <router-link to="/Postlist" class="link-button">
+          <typeWord>
+            go to posts
+          </typeWord>
+        </router-link>
+      </div>
+      
     </div>
 
   </div>
@@ -21,12 +28,14 @@
 
 <script>
 
+import typeWord from '@/components/typeWord.vue'; 
 import MagneticBackground from '../components/MagneticBackgroud.vue'; 
 
 export default {
   name: 'HomeView', 
   components: {
     MagneticBackground, 
+    typeWord,
   },
 
 };
@@ -55,7 +64,7 @@ export default {
 .welcome-banner {
   margin-top: 20%; 
   text-align: center;
-  margin-bottom: 100px; 
+  margin-bottom: 140px; 
 }
 
 .cyber-glow.typewriter {
@@ -91,6 +100,38 @@ export default {
 .subtitle {
   color: #8a8a8a;
   font-size: 1.2rem;
+}
+
+.post-link { 
+  margin-top: 50px; 
+  display: block; 
+  text-align: center;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.link-button { 
+  display: inline-block;
+  color: #b7bd0e !important; 
+  text-shadow: 0px 0px 10px rgba(213, 219, 62, 0.4);
+  transition: font-size 0.5s ease;
+  animation: 
+    shining 3.5s infinite;
+}
+
+@keyframes shining {
+  0% {
+    text-shadow: 0px 0px 10px rgba(213, 219, 62, 0.4);
+  }
+  50% {
+    text-shadow: 0px 0px 30px rgba(234, 240, 70, 0.8);
+  }
+  100% {
+    text-shadow: 0px 0px 10px rgba(213, 219, 62, 0.4);
+  }
+}
+
+.link-button:hover { 
+  font-size: 1.05rem;
 }
 
 
