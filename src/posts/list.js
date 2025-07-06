@@ -1,9 +1,10 @@
 export const tagColorMap = {
     '前端': '#b8daff',
+    "JavaScript": '#FFFF00 ',
     'C/C++': '#ffd8b5',
     '嵌入式': '#c3e6cb',
     '心得': '#f5e6cc', 
-    'Linux': '#e0e0e0', 
+    'Linux': '#00FF00', 
     'default': '#e0e0e0', 
 }
 
@@ -12,6 +13,16 @@ export const getTagColor = (tag) => {
 }
 
 const posts = [
+    {
+        id: 3,
+        name: "js的规范与建议",
+        has_img: false, 
+        summary: "这是在three.js学习中记录官方的js规范", 
+        tags: [{name:"前端"}, {name:"JavaScript"}], 
+        pagePath: "jsPrerequisites/jsPrerequisites",
+        time: "July 06, 2025", 
+
+    },
     {
         id: 2,
         name: "About Me and This Website",
