@@ -1,19 +1,16 @@
 <template>
     <div class="card my-card">
         <div class="card-body">
-            <!-- 头像部分 -->
             <div class="avatar-container">
                 <img src="../assets/Away.jpg" 
                      alt="avatar"
                      class="hover-glow img-fluid">
             </div>
             
-            <!-- 个人信息 -->
             <h2 class="cyber-text mb-3">AWAY</h2>
             <p class="bio-text">永远坚持热爱</p>
             <p class="bio-text">The future belongs to those who believe in the beauty of their dreams.</p>
 
-            <!-- 社交链接 -->
             <div class="social-links mt-4">
                 <a href="https://github.com/AwayC/" class="social-link" target="_blank" rel="noopener noreferrer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="github-icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -52,19 +49,28 @@
 </template>
 
 <script>
-
 import blogRoll from './blogRoll.vue'; 
-import {blogs} from '../blogroll/list.js'; 
 
 export default {
     name: 'infoCard',
     components: {
         blogRoll
     }, 
-    setup() { 
-        return { 
-            blogs, 
-        }; 
+    data() {
+      return {
+        blogs: [], 
+      };
+    },
+    async mounted() {
+      try {
+        const response = await fetch('/blogroll/blogroll.json'); 
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        this.blogs = await response.json();
+      } catch (error) {
+        console.error("加载友链失败:", error);
+      }
     }
 }
 

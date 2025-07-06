@@ -47,12 +47,11 @@
 
 <script>
 import DOMPurify from 'dompurify';
-import { posts, getTagColor } from '../posts/list.js';
 import typeWord from '../components/typeWord.vue';
 import tagBase from '@/components/tagBase.vue';
-import { router } from '@/router/index'; 
+import router from '@/router/index'; 
 import { marked } from 'marked'; 
-import hljs from 'highlight.js'; // 这里仍然需要导入 hljs，因为你在 watch 和 mounted 中直接调用了 hljs.highlightElement
+import hljs from 'highlight.js';
 
 export default {
     name: 'postView', 
@@ -64,14 +63,19 @@ export default {
         return {
           postContent: null, 
           post: null, 
-          getTagColor, 
+          posts: [], 
+          tagColorMap: {}, 
         }
     },
     computed: {
       safeContent() {
-            // Marked.js 的配置应该已经在 main.js 中全局完成
             return DOMPurify.sanitize(marked.parse(this.postContent || ''));
       },
+    },
+    methods: {
+      getTagColor(tag) { 
+          return this.tagColorMap[tag.name] || this.tagColorMap['default']; 
+      }
     },
     watch: {
         postContent(newContent) { 
@@ -86,23 +90,46 @@ export default {
         }
     },
     async mounted() {
-        const post = posts.find(p => p.id === Number(this.$route.params.id)); 
-        if (post?.pagePath) {
-          console.log(post.pagePath); 
-          const contentModule = await import(`../posts/${post.pagePath}.md`); 
-          this.post = post; 
-          this.postContent = contentModule.default; 
+        try {
+            const postsResponse = await fetch('/posts/list.json'); // 路径保持不变
+            if (!postsResponse.ok) {
+                throw new Error(`HTTP error! status: ${postsResponse.status}`);
+            }
+            this.posts = await postsResponse.json();
 
-          // 初次加载时也需要高亮
-          this.$nextTick(() => {
-              console.log('Mounted, attempting to highlight elements');
-              document.querySelectorAll('.content-container pre code').forEach((block) => {
-                  hljs.highlightElement(block);
+            const tagMapResponse = await fetch('/tags/tagmap.json'); // 路径保持不变
+            if (!tagMapResponse.ok) {
+                throw new Error(`HTTP error! status: ${tagMapResponse.status}`);
+            }
+            this.tagColorMap = await tagMapResponse.json();
+
+            const post = this.posts.find(p => p.id === Number(this.$route.params.id)); 
+            
+            if (post && post.pagePath) {
+              console.log(post.pagePath); 
+              
+              // *** 关键修改：从 import() 变为 fetch() Markdown 内容 ***
+              // Markdown 文件现在预期在 public/posts/ 目录下
+              const markdownResponse = await fetch(`/posts/${post.pagePath}.md`); 
+              if (!markdownResponse.ok) {
+                  throw new Error(`HTTP error! status: ${markdownResponse.status}`);
+              }
+              this.post = post; 
+              this.postContent = await markdownResponse.text(); // 获取原始文本内容
+
+              this.$nextTick(() => {
+                  console.log('Mounted, attempting to highlight elements');
+                  document.querySelectorAll('.content-container pre code').forEach((block) => {
+                      hljs.highlightElement(block);
+                  });
               });
-          });
 
-        } else {
-          router.push({name: "404"}); 
+            } else {
+              router.push({name: "404"}); 
+            }
+        } catch (error) {
+            console.error("加载文章或标签数据失败:", error);
+            router.push({name: "404"}); 
         }
     }
 }
@@ -146,8 +173,4 @@ export default {
   box-shadow: 4px 4px 20px #101418;
   padding: 40px 60px 40px 60px; 
 }
-
-
-
-
 </style>
