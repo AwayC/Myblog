@@ -173,4 +173,12 @@ export default {
   box-shadow: 4px 4px 20px #101418;
   padding: 40px 60px 40px 60px; 
 }
+
+@media (max-width: 768px) {
+  .content-container {
+    width: 90%; /* 增大手机端内容容器宽度 */
+    padding: 20px; /* 减少内边距 */
+    box-shadow: 5px 5px 20px #101418; /* 明确添加阴影样式 */
+  }
+}
 </style>

@@ -48,7 +48,6 @@ import infoCard from '../components/infoCard.vue';
 import {gsap} from 'gsap'; 
 import router from '@/router/index';
 
-
 export default { 
     name: "PostlistView", 
     components: { 
@@ -128,7 +127,7 @@ export default {
 }
 
 .postCard { 
-    margin-bottom: 10px !important; 
+    margin-top: 10px !important; 
 }
 
 .my-card-img { 
@@ -141,5 +140,40 @@ export default {
   margin-top: 100px; 
   position: fixed;
   width: 25%; 
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+  .view-container {
+    padding-top: 110px;
+  }
+
+  .col-3 {
+    display: block; /* 显示包含 infoCard 的列 */
+    width: 100%; /* 让列宽度占满屏幕 */
+  }
+
+  .col-8 {
+    width: 100%; /* 内容区域占满屏幕 */
+  }
+
+  .col-1 {
+    display: none; /* 隐藏空白列 */
+  }
+
+  .info-card {
+    position: static;
+    width: 100%;
+    margin: 0;
+  }
+
+  .my-card-img {
+    max-height: 15vh;
+  }
+
+  .container {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
 }
 </style>
