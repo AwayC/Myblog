@@ -1,7 +1,7 @@
 <template>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-            <a class="navbar-brand orb-font blog-name" href="#" data-text="AWAY">AWAY</a>
+            <a class="navbar-brand orb-font blog-name" href="/" data-text="AWAY">AWAY</a>
             <!-- 关键修改：移除 data-bs-toggle 和 data-bs-target 属性 -->
             <!-- 现在完全通过 @click="toggleNavbarCollapse" 来控制折叠行为 -->
             <button class="navbar-toggler" type="button" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation" @click="toggleNavbarCollapse">
@@ -11,11 +11,11 @@
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
                         <!-- 添加 target="_blank" 和 rel="noopener noreferrer" -->
-                        <a class="nav-link home-link orb-font" aria-current="page" href="#" @click="closeNavbarCollapse">Home</a>
+                        <a class="nav-link home-link orb-font" aria-current="page" href="/" @click="closeNavbarCollapse">Home</a>
                     </li>
                     <li class="nav-item">
                         <!-- 添加 target="_blank" 和 rel="noopener noreferrer" -->
-                        <a class="nav-link blogs-link orb-font" href="#/Postlist/" @click="closeNavbarCollapse">posts</a>
+                        <a class="nav-link blogs-link orb-font" href="/Postlist/" @click="closeNavbarCollapse">posts</a>
                     </li>
                     
                 </ul>

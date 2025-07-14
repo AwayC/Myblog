@@ -119,6 +119,7 @@ export default {
 <style scoped>
 .view-container { 
     padding-top: 60px;
+    min-height: 100vh; 
 }
 
 .container { 

@@ -14,6 +14,11 @@ export default {
 </script>
 
 <style>
+html {
+  scroll-padding-top: 85px; /* 根据导航栏实际高度调整 */
+  scroll-behavior: smooth;
+}
+
 #app {
   background-color: #2a2a2a;
   color: #e0e0e0; 
@@ -21,6 +26,7 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 
 nav {
   padding: 30px;
@@ -35,6 +41,5 @@ nav {
   text-align: center;
   font-family:  "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
-
 
 </style>

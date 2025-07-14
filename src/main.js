@@ -1,32 +1,56 @@
 import { createApp } from 'vue';
 import App from './App.vue';
-import router from './router'; // 确保您的 router 导出是 default 导出
+import router from './router';
 
 // 导入 Bootstrap (如果您需要)
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap';
 
-import { marked } from 'marked';
+// 导入 markdown-it 及其插件
+import MarkdownIt from 'markdown-it';
+import MarkdownItAnchor from 'markdown-it-anchor';
+import MarkdownItContainer from 'markdown-it-container';
+
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github-dark.css'; // 选择您喜欢的高亮主题样式
 
-// 配置 Marked.js 来使用 Highlight.js 进行代码高亮
-marked.setOptions({
-  // 这个前缀与 Highlight.js 期望的类名匹配
-  langPrefix: 'hljs language-', 
-  highlight: function(code, lang) {
-    // 检查 Highlight.js 是否支持当前语言，如果不支持则使用纯文本
-    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-    try {
-      // 执行代码高亮
-      return hljs.highlight(code, { language }).value;
-    } catch (error) {
-      // 捕获高亮过程中的任何错误
-      console.error('Highlight.js error during highlight:', error);
-      // 如果出错，返回原始代码
-      return code;
+// --- 配置 MarkdownIt ---
+const md = new MarkdownIt({
+  html: true,        // 启用 HTML 标签解析
+  linkify: true,     // 自动将 URL 转换为链接
+  typographer: true, // 启用一些排版替换，如破折号、省略号等
+  highlight: function (str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(str, { language: lang }).value;
+      } catch (__) {
+        console.error('Highlight.js error during highlight:', __);
+      }
     }
+    // 如果没有指定语言或高亮失败，返回原始代码
+    return ''; // 返回空字符串，让 highlight.js 的 CSS 决定默认样式
   }
-});
+})
+.use(MarkdownItAnchor, {
+  // 配置标题锚点生成
+  permalink: MarkdownItAnchor.permalink.ariaHidden({
+    placement: 'before',
+    symbol: '#',
+  }),
+  // slugify 函数与 VitePress 兼容，确保生成的 ID 一致性
+  slugify: s => encodeURIComponent(String(s).trim().toLowerCase().replace(/\s+/g, '-')),
+})
+// 添加自定义容器插件，支持 :::tip, :::warning, :::danger 等语法
+.use(MarkdownItContainer, 'tip')
+.use(MarkdownItContainer, 'warning')
+.use(MarkdownItContainer, 'danger');
+// 你可以根据需要添加更多自定义容器，或配置渲染规则
 
-createApp(App).use(router).mount('#app');
+
+const app = createApp(App);
+
+// 将 markdown-it 实例作为全局属性挂载到 Vue 应用上
+// 这样在任何组件中都可以通过 this.$markdown 访问它
+app.config.globalProperties.$markdown = md;
+
+app.use(router).mount('#app');
