@@ -11,11 +11,13 @@
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
                         <!-- 添加 target="_blank" 和 rel="noopener noreferrer" -->
-                        <a class="nav-link home-link orb-font" aria-current="page" href="/" @click="closeNavbarCollapse">Home</a>
+                        <!-- <a class="nav-link home-link orb-font" aria-current="page" href="/" @click="closeNavbarCollapse">Home</a> -->
+                        <router-link class="nav-link home-link orb-font" to="/" @click="closeNavbarCollapse">Home</router-link>
                     </li>
                     <li class="nav-item">
                         <!-- 添加 target="_blank" 和 rel="noopener noreferrer" -->
-                        <a class="nav-link blogs-link orb-font" href="/Postlist/" @click="closeNavbarCollapse">posts</a>
+                        <!-- <a class="nav-link blogs-link orb-font" href="/#/Postlist/" @click="closeNavbarCollapse">posts</a> -->
+                        <router-link class="nav-link blogs-link orb-font" to="/Postlist" @click="closeNavbarCollapse">posts</router-link>
                     </li>
                     
                 </ul>

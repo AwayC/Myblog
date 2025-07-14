@@ -360,6 +360,7 @@ export default {
   padding-top: 50px; 
   box-shadow: 4px 4px 20px #101418;
   background-color: #181c27;
+  
 }
 
 .header-container { 
@@ -506,7 +507,8 @@ export default {
   flex-shrink: 0; 
   position: sticky; 
   top: 80px; 
-  height: calc(100vh - 100px); 
+  height: auto; /* *** 修正：让高度根据内容自适应 *** */
+  max-height: calc(100vh - 80px - 20px); /* *** 新增：最大高度，避免溢出，80px是top，20px是底部额外间距 *** */
   overflow-y: auto; 
   padding: 16px;
   margin-left: 20px; 
