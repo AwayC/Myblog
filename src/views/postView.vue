@@ -145,11 +145,11 @@ export default {
       scrollToHeading(id) {
         const element = document.getElementById(id);
         if (element) {
-          let offset = 100; // 导航栏高度 + 间距，根据您的实际 Navbar 调整
+          let offset = 385; // 导航栏高度 + 间距，根据您的实际 Navbar 调整
           
           this.isScrolling += 1; 
           window.scrollTo({
-            top: element.offsetTop - offset, // 修正：改为减去偏移量
+            top: element.offsetTop + offset, // 修正：改为减去偏移量
             behavior: 'smooth',
           });
           this.activeHeadingId = id;
