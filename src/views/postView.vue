@@ -138,6 +138,8 @@ export default {
               });
             });
             this.setupIntersectionObserver(); 
+            // *** 新增：在这里添加锚点点击事件监听器 ***
+            this.setupAnchorClickHandler();
           }
         });
       },
@@ -145,11 +147,12 @@ export default {
       scrollToHeading(id) {
         const element = document.getElementById(id);
         if (element) {
-          let offset = 385; // 导航栏高度 + 间距，根据您的实际 Navbar 调整
+          // 用户的原始偏移量实现，未修改
+          let offset = 385; 
           
           this.isScrolling += 1; 
           window.scrollTo({
-            top: element.offsetTop + offset, // 修正：改为减去偏移量
+            top: element.offsetTop + offset, // 保持用户原始的偏移量实现
             behavior: 'smooth',
           });
           this.activeHeadingId = id;
@@ -172,13 +175,22 @@ export default {
             if(this.isScrolling > 0) return; // 如果正在平滑滚动，暂停 Observer 自动更新
 
             entries.forEach((entry) => {
-              if (entry.isIntersecting) {
+              // 只有当元素进入视口时才更新 activeHeadingId
+              // 并且可以加入一个阈值来控制敏感度
+              if (entry.isIntersecting && entry.intersectionRatio >= 0.5) { // 例如，当至少一半可见时
                 this.activeHeadingId = entry.target.id;
               }
             });
           },
           {
-            rootMargin: '-50% 0px -50% 0px', // 修正 rootMargin
+            // 修正 rootMargin：为了让当前标题在屏幕中部或顶部附近时被激活，
+            // 应该设置一个负的顶部 margin，让“可观测区域”向上移动。
+            // 例如，如果你希望标题在距离顶部 100px 左右时被激活，
+            // 并且 observer 默认是从 root 的 0px 开始计算，那么 rootMargin 顶部应该设置为 -100px。
+            // 你的 '-50% 0px -50% 0px' 会导致只在元素完全通过屏幕中间时才触发，可能不符合预期。
+            // 建议： rootMargin: '-100px 0px -70% 0px' （顶部-100px，底部-70%，这样当元素顶部在100px时就被激活）
+            // 或者更简单： rootMargin: '0px 0px -80% 0px' 让元素顶部进入视口20%时被激活
+            rootMargin: '0px 0px -80% 0px', // 示例：当元素顶部进入视口20%时触发
             threshold: 0, 
           }
         );
@@ -191,6 +203,30 @@ export default {
         });
       },
       
+      // *** 新增方法：处理锚点点击事件 ***
+      setupAnchorClickHandler() {
+        const contentContainer = this.$el.querySelector('.markdown-body');
+        if (contentContainer) {
+          // 先移除旧的事件监听器，防止重复绑定
+          if (this._anchorClickHandler) { // _anchorClickHandler 用于存储事件处理函数的引用
+              contentContainer.removeEventListener('click', this._anchorClickHandler);
+          }
+
+          // 定义新的事件处理函数
+          this._anchorClickHandler = (event) => {
+            const target = event.target;
+            // 检查点击的是否是锚点链接，并且其 href 以 # 开头
+            if (target.tagName === 'A' && target.getAttribute('href') && target.getAttribute('href').startsWith('#')) {
+              event.preventDefault(); // 阻止默认的跳转行为
+              const id = target.getAttribute('href').substring(1); // 获取 ID
+              this.scrollToHeading(id); // 调用滚动函数
+            }
+          };
+          // 添加事件监听器
+          contentContainer.addEventListener('click', this._anchorClickHandler);
+        }
+      },
+
       async loadPostData(postId) {
         try {
           const postsResponse = await fetch('/posts/list.json'); 
@@ -223,12 +259,14 @@ export default {
 
             // 确保 DOM 更新后重新提取标题和设置 Observer
             this.$nextTick(() => {
-              this.extractHeadings();
+              this.extractHeadings(); // extractHeadings 内部会调用 setupAnchorClickHandler
               // 由于页面内容变化，重新初始化 Intersection Observer
-              if (this.observer) {
-                this.observer.disconnect();
-              }
-              this.setupIntersectionObserver();
+              // 注意：setupIntersectionObserver 已经在 extractHeadings 中被调用了，
+              // 并且它内部会处理 disconnect，所以这里不需要重复调用。
+              // if (this.observer) {
+              //   this.observer.disconnect();
+              // }
+              // this.setupIntersectionObserver();
             });
 
           } else {
@@ -250,15 +288,18 @@ export default {
         }
       }
     },
+    // mounted 钩子可以保持不变，因为 loadPostData 在 watch 中立即触发
     async mounted() {
-
       console.log('PostView mounted for ID:', this.$route.params.id);
-      this.$nextTick(() => {
-      });
     },
     beforeUnmount() {
       if (this.observer) {
         this.observer.disconnect();
+      }
+      // *** 新增：在组件卸载前移除事件监听器 ***
+      const contentContainer = this.$el.querySelector('.markdown-body');
+      if (contentContainer && this._anchorClickHandler) {
+          contentContainer.removeEventListener('click', this._anchorClickHandler);
       }
     }, 
 }
