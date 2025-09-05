@@ -19,6 +19,9 @@
                         <!-- <a class="nav-link blogs-link orb-font" href="/#/Postlist/" @click="closeNavbarCollapse">posts</a> -->
                         <router-link class="nav-link blogs-link orb-font" to="/Postlist" @click="closeNavbarCollapse">posts</router-link>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link orb-font index-link" target="_blank" href="./page/cube/index.html" @click="closeNavbarCollapse">cube</a>
+                    </li>
                     
                 </ul>
                 <ul class="navbar-nav right-border">
@@ -165,6 +168,10 @@ export default {
 .home-link:hover { 
     color: #e0e0e0 !important; 
     text-shadow: 2px 0 0 #ff00c1; 
+}
+.index-link:hover { 
+    color: #e0e0e0 !important; 
+    text-shadow: 2px 0 0 #64c510; 
 }
 
 .blogs-link { 
