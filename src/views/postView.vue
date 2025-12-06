@@ -300,25 +300,28 @@ export default {
 .page-link {
   height: 100px; 
   display: flex; 
-  gap: 30px; 
+  /* gap: 30px;  可以保留，也可以去掉，因为我们下面会用宽度控制 */
   margin: 0 auto;
   width: 90%; 
   max-width: 1200px; 
-  justify-content: space-between; 
-}
-
-.next-page {  
-  height: 100%; 
-  padding: 0; 
-  display: flex; 
+  justify-content: space-between; /* 保持两端对齐 */
 }
 
 .pre-page {
   height: 100%; 
   padding: 0; 
   display: flex;
+  width: 48%; /* 强制占用接近一半的宽度 */
+  margin-right: auto; /* 确保它靠左（虽然通常默认就是靠左） */
 }
 
+.next-page {  
+  height: 100%; 
+  padding: 0; 
+  display: flex; 
+  width: 48%; /* 强制占用接近一半的宽度 */
+  margin-left: auto; /* 【核心修改】：这一行会强制将它推到容器的最右边，即使没有上一篇 */
+}
 .next-page .card,
 .pre-page .card {
     position: relative;
