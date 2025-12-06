@@ -98,10 +98,10 @@ export default {
           tagColorMap: {}, 
           headings: [], // 存储解析出的标题
           activeHeadingId: null, // 当前激活的标题ID
-          observer: null, // Intersection Observer 实例
-          isScrolling: 0, 
+          isScrolling: 0, // 滚动锁，防止点击目录时触发滚动监听导致的高亮跳动
           prevPost: null,
           nextPost: null,
+          scrollTimer: null, // 用于节流（可选，目前未启用，预留位置）
         }
     },
     computed: {
@@ -115,11 +115,12 @@ export default {
     methods: {
       goToPost(postId) {
         console.log("Navigating to post:", postId);
-        router.push({ name: 'post', params: {id: postId} }); // 确保 params 键是 id
+        router.push({ name: 'post', params: {id: postId} });
       },
       getTagColor(tag) { 
           return this.tagColorMap[tag.name] || this.tagColorMap['default']; 
       },
+      
       extractHeadings() {
         this.headings = [];
         this.$nextTick(() => {
@@ -137,92 +138,90 @@ export default {
                 level: parseInt(h.tagName.substring(1)), 
               });
             });
-            this.setupIntersectionObserver(); 
-            // *** 新增：在这里添加锚点点击事件监听器 ***
+            
+            // 初始化点击事件
             this.setupAnchorClickHandler();
+            // 初始化一次高亮，防止页面刚加载时没有高亮
+            this.handleScroll();
           }
         });
+      },
+
+      // *** 核心修改：处理滚动事件 ***
+      handleScroll() {
+        // 如果正在进行点击跳转的平滑滚动，则不执行自动检测
+        if (this.isScrolling > 0) return;
+
+        // "视觉基准线"：标题滚动到距离顶部 120px 处，算作“当前正在阅读”
+        // 你可以根据你的 Header 高度调整这个值 (例如 100 - 200 之间)
+        const scrollY = window.scrollY + 120; 
+
+        let currentId = null;
+
+        // 倒序遍历：找到最后一个 offsetTop 小于当前 scrollY 的标题
+        for (let i = this.headings.length - 1; i >= 0; i--) {
+            const heading = this.headings[i];
+            const element = document.getElementById(heading.id);
+            
+            if (element && element.offsetTop <= scrollY) {
+                currentId = heading.id;
+                break; // 找到后立即停止
+            }
+        }
+
+        // 边界处理：如果滚动到底部，强制高亮最后一个
+        const isBottom = (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50;
+        if (isBottom && this.headings.length > 0) {
+            currentId = this.headings[this.headings.length - 1].id;
+        }
+
+        if (currentId) {
+            this.activeHeadingId = currentId;
+        } else if (this.headings.length > 0 && window.scrollY < 100) {
+            // 如果在页面最顶部，高亮第一个
+            this.activeHeadingId = this.headings[0].id;
+        }
       },
       
       scrollToHeading(id) {
         const element = document.getElementById(id);
         if (element) {
-          // 用户的原始偏移量实现，未修改
+          // 用户的原始偏移量，保持不变
           let offset = 385; 
           
-          this.isScrolling += 1; 
+          this.isScrolling += 1; // 加锁
+          this.activeHeadingId = id; // 立即设置高亮，提供即时反馈
+
           window.scrollTo({
-            top: element.offsetTop + offset, // 保持用户原始的偏移量实现
+            top: element.offsetTop + offset,
             behavior: 'smooth',
           });
-          this.activeHeadingId = id;
+          
+          // 滚动动画结束后解锁
           setTimeout(() => {
             this.isScrolling -= 1; 
-          }, 550); 
+          }, 600); 
 
         } else {
           console.warn('Element with ID not found:', id);
         }
       },
-      setupIntersectionObserver() {
-        if (this.observer) {
-          this.observer.disconnect(); 
-        }
-
-        this.observer = new IntersectionObserver(
-
-          (entries) => {
-            if(this.isScrolling > 0) return; // 如果正在平滑滚动，暂停 Observer 自动更新
-
-            entries.forEach((entry) => {
-              // 只有当元素进入视口时才更新 activeHeadingId
-              // 并且可以加入一个阈值来控制敏感度
-              if (entry.isIntersecting && entry.intersectionRatio >= 0.5) { // 例如，当至少一半可见时
-                this.activeHeadingId = entry.target.id;
-              }
-            });
-          },
-          {
-            // 修正 rootMargin：为了让当前标题在屏幕中部或顶部附近时被激活，
-            // 应该设置一个负的顶部 margin，让“可观测区域”向上移动。
-            // 例如，如果你希望标题在距离顶部 100px 左右时被激活，
-            // 并且 observer 默认是从 root 的 0px 开始计算，那么 rootMargin 顶部应该设置为 -100px。
-            // 你的 '-50% 0px -50% 0px' 会导致只在元素完全通过屏幕中间时才触发，可能不符合预期。
-            // 建议： rootMargin: '-100px 0px -70% 0px' （顶部-100px，底部-70%，这样当元素顶部在100px时就被激活）
-            // 或者更简单： rootMargin: '0px 0px -80% 0px' 让元素顶部进入视口20%时被激活
-            rootMargin: '0px 0px -80% 0px', // 示例：当元素顶部进入视口20%时触发
-            threshold: 0, 
-          }
-        );
-
-        this.headings.forEach((heading) => {
-          const el = document.getElementById(heading.id);
-          if (el) {
-            this.observer.observe(el);
-          }
-        });
-      },
       
-      // *** 新增方法：处理锚点点击事件 ***
       setupAnchorClickHandler() {
         const contentContainer = this.$el.querySelector('.markdown-body');
         if (contentContainer) {
-          // 先移除旧的事件监听器，防止重复绑定
-          if (this._anchorClickHandler) { // _anchorClickHandler 用于存储事件处理函数的引用
+          if (this._anchorClickHandler) { 
               contentContainer.removeEventListener('click', this._anchorClickHandler);
           }
 
-          // 定义新的事件处理函数
           this._anchorClickHandler = (event) => {
             const target = event.target;
-            // 检查点击的是否是锚点链接，并且其 href 以 # 开头
             if (target.tagName === 'A' && target.getAttribute('href') && target.getAttribute('href').startsWith('#')) {
-              event.preventDefault(); // 阻止默认的跳转行为
-              const id = target.getAttribute('href').substring(1); // 获取 ID
-              this.scrollToHeading(id); // 调用滚动函数
+              event.preventDefault(); 
+              const id = target.getAttribute('href').substring(1); 
+              this.scrollToHeading(id); 
             }
           };
-          // 添加事件监听器
           contentContainer.addEventListener('click', this._anchorClickHandler);
         }
       },
@@ -241,7 +240,7 @@ export default {
           }
           this.tagColorMap = await tagMapResponse.json();
 
-          const post = this.posts.find(p => p.id === Number(postId)); // 使用传入的 postId
+          const post = this.posts.find(p => p.id === Number(postId)); 
           
           if (post && post.pagePath) {
             console.log('Loading markdown for:', post.pagePath); 
@@ -252,21 +251,12 @@ export default {
             this.post = post; 
             this.postContent = await markdownResponse.text();
 
-            // 设置前后文章
             const currentPostIndex = this.posts.findIndex(p => p.id === post.id);
             this.prevPost = currentPostIndex > 0 ? this.posts[currentPostIndex - 1] : null;
             this.nextPost = currentPostIndex < this.posts.length - 1 ? this.posts[currentPostIndex + 1] : null;
 
-            // 确保 DOM 更新后重新提取标题和设置 Observer
             this.$nextTick(() => {
-              this.extractHeadings(); // extractHeadings 内部会调用 setupAnchorClickHandler
-              // 由于页面内容变化，重新初始化 Intersection Observer
-              // 注意：setupIntersectionObserver 已经在 extractHeadings 中被调用了，
-              // 并且它内部会处理 disconnect，所以这里不需要重复调用。
-              // if (this.observer) {
-              //   this.observer.disconnect();
-              // }
-              // this.setupIntersectionObserver();
+              this.extractHeadings(); 
             });
 
           } else {
@@ -288,15 +278,15 @@ export default {
         }
       }
     },
-    // mounted 钩子可以保持不变，因为 loadPostData 在 watch 中立即触发
+    // *** 生命周期：挂载时添加滚动监听 ***
     async mounted() {
       console.log('PostView mounted for ID:', this.$route.params.id);
+      window.addEventListener('scroll', this.handleScroll, { passive: true });
     },
+    // *** 生命周期：卸载前移除监听器 ***
     beforeUnmount() {
-      if (this.observer) {
-        this.observer.disconnect();
-      }
-      // *** 新增：在组件卸载前移除事件监听器 ***
+      window.removeEventListener('scroll', this.handleScroll);
+      
       const contentContainer = this.$el.querySelector('.markdown-body');
       if (contentContainer && this._anchorClickHandler) {
           contentContainer.removeEventListener('click', this._anchorClickHandler);
@@ -304,7 +294,6 @@ export default {
     }, 
 }
 </script>
-
 
 <style scoped>
 
@@ -350,11 +339,11 @@ export default {
 }
 
 .next-page .page-label {
-    text-align: right; /* 右对齐标签 */
+    text-align: right; 
 }
 
 .next-page .page-title {
-    text-align: right; /* 右对齐标题 */
+    text-align: right; 
 }
 
 .page-label {
@@ -427,20 +416,19 @@ export default {
   transform: translateY(-2px);
 }
 
-/* 主内容区域布局 */
 .main-content-layout {
-  display: flex; /* 启用 Flexbox */
-  justify-content: center; /* 水平居中 */
-  gap: 30px; /* 内容区和导航区之间的间距 */
+  display: flex; 
+  justify-content: center; 
+  gap: 30px; 
   margin: 0 auto;
-  width: 90%; /* 控制整体宽度 */
-  max-width: 1200px; /* 最大宽度，防止过宽 */
-  padding-bottom: 50px; /* 底部留白 */
+  width: 90%; 
+  max-width: 1200px; 
+  padding-bottom: 50px; 
 }
 
 .content-wrapper {
-  flex-grow: 1; /* 内容区占据剩余空间 */
-  min-width: 0; /* 允许内容区根据内容缩小 */
+  flex-grow: 1; 
+  min-width: 0; 
   background-color: rgb(37, 45, 56); 
   box-shadow: 4px 4px 20px #101418;
   padding: 40px 60px 40px 60px;
@@ -459,13 +447,13 @@ export default {
 .markdown-body ::v-deep h5, 
 .markdown-body ::v-deep h6 {
   position: relative; 
-  color: #9cc5e2; /* 标题颜色 */
-  margin-top: 1.5em; /* 标题顶部间距 */
-  margin-bottom: 1em; /* 标题底部间距 */
+  color: #9cc5e2; 
+  margin-top: 1.5em; 
+  margin-bottom: 1em; 
   line-height: 1.3;
-  font-weight: 600; /* 标题加粗 */
-  padding-bottom: 0.3em; /* 增加一点内边距，配合下划线 */
-  border-bottom: 1px solid rgba(156, 197, 226, 0.2); /* 标题下划线 */
+  font-weight: 600; 
+  padding-bottom: 0.3em; 
+  border-bottom: 1px solid rgba(156, 197, 226, 0.2); 
 }
 .markdown-body ::v-deep h1 { font-size: 2.2em; }
 .markdown-body ::v-deep h2 { font-size: 1.8em; }
@@ -473,12 +461,12 @@ export default {
 .markdown-body ::v-deep h4 { font-size: 1.2em; }
 
 .markdown-body ::v-deep p {
-  margin-bottom: 1em; /* 段落底部间距 */
+  margin-bottom: 1em; 
 }
 
 .markdown-body ::v-deep ul, .markdown-body ::v-deep ol {
   margin-bottom: 1em;
-  padding-left: 2em; /* 列表左侧缩进 */
+  padding-left: 2em; 
 }
 
 .markdown-body ::v-deep li {
@@ -486,7 +474,7 @@ export default {
 }
 
 .markdown-body ::v-deep a {
-  color: #007bff; /* 链接颜色 */
+  color: #007bff; 
   text-decoration: none;
 }
 
@@ -498,15 +486,15 @@ export default {
   background-color: rgb(13, 13, 13); 
   border-radius: 6px;
   padding: 1em;
-  overflow-x: auto; /* 水平滚动 */
+  overflow-x: auto; 
   margin-bottom: 1.5em;
 }
 
 .markdown-body ::v-deep code {
-  background-color: rgba(116, 143, 166, 0.2); /* 行内代码背景 */
+  background-color: rgba(116, 143, 166, 0.2); 
   padding: 0.1em 0.2em;
   border-radius: 4px;
-  font-family: 'Fira Code', 'Cascadia Code', monospace; /* 程序员字体 */
+  font-family: 'Fira Code', 'Cascadia Code', monospace; 
   font-size: 0.9em;
   color: #e0e0e0;
 }
@@ -518,7 +506,6 @@ export default {
     font-size: 1em;
 }
 
-/* 标题锚点样式 */
 .markdown-body ::v-deep .header-anchor {
   opacity: 0; 
   position: absolute; 
@@ -532,7 +519,6 @@ export default {
   padding-right: 0.5em; 
 }
 
-/* 当鼠标悬停在标题上时，显示锚点 */
 .markdown-body ::v-deep h1:hover .header-anchor, 
 .markdown-body ::v-deep h2:hover .header-anchor, 
 .markdown-body ::v-deep h3:hover .header-anchor, 
@@ -542,14 +528,13 @@ export default {
   opacity: 1; 
 }
 
-/* 右侧导航栏样式 (这些不在 v-html 内部，通常不需要 ::v-deep) */
 .toc-sidebar {
   width: 250px; 
   flex-shrink: 0; 
   position: sticky; 
   top: 80px; 
-  height: auto; /* *** 修正：让高度根据内容自适应 *** */
-  max-height: calc(100vh - 80px - 20px); /* *** 新增：最大高度，避免溢出，80px是top，20px是底部额外间距 *** */
+  height: auto; 
+  max-height: calc(100vh - 80px - 20px); 
   overflow-y: auto; 
   padding: 16px;
   margin-left: 20px; 
@@ -592,15 +577,12 @@ export default {
   background-color: rgba(0, 123, 255, 0.1); 
 }
 
-/* 目录激活状态 */
 .toc-sidebar li.active a {
   color: #83adda; 
   background-color: rgba(0, 123, 255, 0.25); 
   border-left: 4px solid #6a6ce1; 
-
 }
 
-/* 目录层级缩进 */
 .toc-sidebar li.level-3 {
   padding-left: 15px;
 }
@@ -608,7 +590,6 @@ export default {
   padding-left: 30px;
 }
 
-/* 媒体查询：适配小屏幕 */
 @media (max-width: 768px) {
   .main-content-layout {
     width: 95%; 
@@ -623,6 +604,5 @@ export default {
   .toc-sidebar {
     display: none;
   }
-  
 }
 </style>
