@@ -257,6 +257,7 @@ export default {
 
             this.$nextTick(() => {
               this.extractHeadings(); 
+              this.processMarkdownEnhancements();
             });
 
           } else {
@@ -266,6 +267,56 @@ export default {
           console.error("加载文章或标签数据失败:", error);
           router.push({name: "404"}); 
         }
+      },
+      processMarkdownEnhancements() {
+        const contentContainer = this.$el.querySelector('.markdown-body');
+        if (!contentContainer) return;
+
+        // Add Copy Buttons
+        contentContainer.querySelectorAll('pre').forEach(pre => {
+            if (pre.querySelector('.copy-btn')) return;
+            
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+            
+            btn.addEventListener('click', () => {
+                const code = pre.querySelector('code');
+                const text = code ? code.innerText : pre.innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.classList.add('copied');
+                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+                    }, 2000);
+                });
+            });
+            pre.appendChild(btn);
+        });
+
+        // Render GitHub Alerts
+        contentContainer.querySelectorAll('blockquote').forEach(bq => {
+            const firstP = bq.querySelector('p');
+            if (!firstP) return;
+            
+            const text = firstP.textContent;
+            const match = text.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
+            
+            if (match) {
+                const type = match[1].toLowerCase();
+                bq.classList.add('markdown-alert', `markdown-alert-${type}`);
+                
+                // Remove the marker
+                firstP.innerHTML = firstP.innerHTML.replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s?/i, '');
+                
+                // Add title
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'markdown-alert-title';
+                titleDiv.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                bq.insertBefore(titleDiv, firstP);
+            }
+        });
       },
     },
     watch: {
@@ -491,6 +542,7 @@ export default {
   padding: 1em;
   overflow-x: auto; 
   margin-bottom: 1.5em;
+  position: relative;
 }
 
 .markdown-body ::v-deep code {
@@ -508,6 +560,67 @@ export default {
     border-radius: 0;
     font-size: 1em;
 }
+
+.markdown-body ::v-deep .copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #e0e0e0;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.markdown-body ::v-deep pre:hover .copy-btn {
+  opacity: 1;
+}
+
+.markdown-body ::v-deep .copy-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.markdown-body ::v-deep hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: rgba(156, 197, 226, 0.2);
+  border: 0;
+}
+
+/* GitHub Alerts */
+.markdown-body ::v-deep .markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  border-left: 0.25em solid;
+  background-color: rgba(24, 28, 39, 0.5);
+  border-radius: 6px;
+}
+
+.markdown-body ::v-deep .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 14px;
+}
+
+.markdown-body ::v-deep .markdown-alert-note { border-color: #1f6feb; }
+.markdown-body ::v-deep .markdown-alert-note .markdown-alert-title { color: #58a6ff; }
+.markdown-body ::v-deep .markdown-alert-tip { border-color: #238636; }
+.markdown-body ::v-deep .markdown-alert-tip .markdown-alert-title { color: #3fb950; }
+.markdown-body ::v-deep .markdown-alert-important { border-color: #8957e5; }
+.markdown-body ::v-deep .markdown-alert-important .markdown-alert-title { color: #a371f7; }
+.markdown-body ::v-deep .markdown-alert-warning { border-color: #9e6a03; }
+.markdown-body ::v-deep .markdown-alert-warning .markdown-alert-title { color: #d29922; }
+.markdown-body ::v-deep .markdown-alert-caution { border-color: #da3633; }
+.markdown-body ::v-deep .markdown-alert-caution .markdown-alert-title { color: #f85149; }
 
 .markdown-body ::v-deep .header-anchor {
   opacity: 0; 

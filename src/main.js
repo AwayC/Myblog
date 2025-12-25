@@ -9,7 +9,6 @@ import 'bootstrap/dist/js/bootstrap';
 // 导入 markdown-it 及其插件
 import MarkdownIt from 'markdown-it';
 import MarkdownItAnchor from 'markdown-it-anchor';
-import MarkdownItContainer from 'markdown-it-container';
 
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github-dark.css'; // 选择您喜欢的高亮主题样式
@@ -39,13 +38,15 @@ const md = new MarkdownIt({
   }),
   // slugify 函数与 VitePress 兼容，确保生成的 ID 一致性
   slugify: s => encodeURIComponent(String(s).trim().toLowerCase().replace(/\s+/g, '-')),
-})
-// 添加自定义容器插件，支持 :::tip, :::warning, :::danger 等语法
-.use(MarkdownItContainer, 'tip')
-.use(MarkdownItContainer, 'warning')
-.use(MarkdownItContainer, 'danger');
+});
 // 你可以根据需要添加更多自定义容器，或配置渲染规则
 
+// --- 自定义渲染规则：图片懒加载 ---
+md.renderer.rules.image = function (tokens, idx, options, env, self) {
+  const token = tokens[idx];
+  token.attrSet('loading', 'lazy'); // 添加 loading="lazy"
+  return self.renderToken(tokens, idx, options);
+};
 
 const app = createApp(App);
 
