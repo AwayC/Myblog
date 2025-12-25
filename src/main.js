@@ -41,12 +41,6 @@ const md = new MarkdownIt({
 });
 // 你可以根据需要添加更多自定义容器，或配置渲染规则
 
-// --- 自定义渲染规则：图片懒加载 ---
-md.renderer.rules.image = function (tokens, idx, options, env, self) {
-  const token = tokens[idx];
-  token.attrSet('loading', 'lazy'); // 添加 loading="lazy"
-  return self.renderToken(tokens, idx, options);
-};
 
 const app = createApp(App);
 
