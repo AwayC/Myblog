@@ -1,40 +1,47 @@
 <template>
   <div class="row view-container">
-    <div class="col-3">
-        <infoCard class="info-card"></infoCard>
+    <!-- Loading Indicator -->
+    <div v-if="isLoading" class="loading-container">
+      <div class="spinner"></div>
     </div>
 
-    <div class="col-8">
-      <div v-for='post in posts' :key="post.id" class="container" @click="openPost(post.id)">
-            <postCard class="postCard">
-              <template v-if="post.has_img" #has_img>
-                <img class='my-card-img' :src="getPostImage(post.img)" :alt="post.name">
-              </template>
+    <div v-else class="row" style="width: 100%; margin: 0;">
+      <div class="col-3">
+          <infoCard class="info-card"></infoCard>
+      </div>
 
-              <template #tags>
-                <tagBase v-for='tag in post.tags' :key="tag.name" :style="{backgroundColor: getTagColor(tag)}">
-                  {{tag.name}}
-                </tagBase>
-              </template>
+      <div class="col-8">
+        <div v-for='post in posts' :key="post.id" class="container" @click="openPost(post.id)">
+              <postCard class="postCard">
+                <template v-if="post.has_img" #has_img>
+                  <img class='my-card-img' :src="getPostImage(post.img)" :alt="post.name">
+                </template>
 
-              <template #header>
-                {{ post.name }}
-              </template>
+                <template #tags>
+                  <tagBase v-for='tag in post.tags' :key="tag.name" :style="{backgroundColor: getTagColor(tag)}">
+                    {{tag.name}}
+                  </tagBase>
+                </template>
 
-              {{ post.summary }}
+                <template #header>
+                  {{ post.name }}
+                </template>
 
-              <template #time>
-                {{ post.time }}
-              </template>
-            </postCard>  
+                {{ post.summary }}
+
+                <template #time>
+                  {{ post.time }}
+                </template>
+              </postCard>  
+          </div>
+      </div>
+      <div class="col-1">
+        
+      </div>
+      <div class="footer" style='height: 100px'>
+        <div class="copyright">
+          © 2025 powered AWAY
         </div>
-    </div>
-    <div class="col-1">
-      
-    </div>
-    <div class="footer" style='height: 100px'>
-      <div class="copyright">
-        © 2025 powered AWAY
       </div>
     </div>
 
@@ -59,6 +66,7 @@ export default {
       return {
         posts: [], 
         tagColorMap: {}, 
+        isLoading: true,
       };
     },
     methods: {
@@ -70,6 +78,17 @@ export default {
       },
       getTagColor(tag) { 
           return this.tagColorMap[tag.name] || this.tagColorMap['default']; 
+      },
+      preloadImages(posts) {
+        const promises = posts.filter(post => post.has_img && post.img).map(post => {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.src = this.getPostImage(post.img);
+            img.onload = resolve;
+            img.onerror = resolve; // 即使加载失败也继续，避免卡死
+          });
+        });
+        return Promise.all(promises);
       }
     },
     setup() { 
@@ -84,21 +103,25 @@ export default {
     }, 
     async mounted() { 
       try {
-        // 更新路径: 从 public/posts/posts.json 加载
-        const postsResponse = await fetch('/posts/list.json'); 
-        if (!postsResponse.ok) {
-          throw new Error(`HTTP error! status: ${postsResponse.status}`);
-        }
-        console.log(postsResponse);
-        this.posts = await postsResponse.json();
+        // 1. 并行加载数据
+        const [postsResponse, tagMapResponse] = await Promise.all([
+          fetch('/posts/list.json'),
+          fetch('/tags/tagmap.json')
+        ]);
 
-        // 更新路径: 从 public/tags/tagmap.json 加载
-        const tagMapResponse = await fetch('/tags/tagmap.json'); 
-        if (!tagMapResponse.ok) {
-          throw new Error(`HTTP error! status: ${tagMapResponse.status}`);
-        }
+        if (!postsResponse.ok) throw new Error(`Posts HTTP error! status: ${postsResponse.status}`);
+        if (!tagMapResponse.ok) throw new Error(`Tags HTTP error! status: ${tagMapResponse.status}`);
+
+        this.posts = await postsResponse.json();
         this.tagColorMap = await tagMapResponse.json();
 
+        // 2. 预加载所有文章图片
+        await this.preloadImages(this.posts);
+
+        // 3. 图片加载完成后，隐藏 Loading，显示内容
+        this.isLoading = false;
+
+        // 4. 执行进场动画
         this.$nextTick(() => {
           gsap.from(".container", {
             duration: 0.8, 
@@ -106,11 +129,13 @@ export default {
             opacity: 0, 
             stagger: 0.15, 
             ease: "back.out(1.7)",
-            delay: 0.3
+            delay: 0.1 
           }); 
         });
+
       } catch (error) {
         console.error("加载数据失败:", error);
+        this.isLoading = false; // 出错也要显示内容（虽然可能是空的）
       }
     }
 }
@@ -120,6 +145,27 @@ export default {
 .view-container { 
     padding-top: 60px;
     min-height: 100vh; 
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  width: 100%;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(156, 197, 226, 0.3);
+  border-top-color: #9cc5e2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .container { 
