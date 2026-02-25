@@ -96,12 +96,12 @@ export default {
           post: null, 
           posts: [], 
           tagColorMap: {}, 
-          headings: [], // 存储解析出的标题
-          activeHeadingId: null, // 当前激活的标题ID
-          isScrolling: 0, // 滚动锁，防止点击目录时触发滚动监听导致的高亮跳动
+          headings: [], 
+          activeHeadingId: null, 
+          isScrolling: 0, 
           prevPost: null,
           nextPost: null,
-          scrollTimer: null, // 用于节流（可选，目前未启用，预留位置）
+          scrollTimer: null, 
         }
     },
     computed: {
@@ -139,37 +139,29 @@ export default {
               });
             });
             
-            // 初始化点击事件
             this.setupAnchorClickHandler();
-            // 初始化一次高亮，防止页面刚加载时没有高亮
             this.handleScroll();
           }
         });
       },
 
-      // *** 核心修改：处理滚动事件 ***
       handleScroll() {
-        // 如果正在进行点击跳转的平滑滚动，则不执行自动检测
         if (this.isScrolling > 0) return;
 
-        // "视觉基准线"：标题滚动到距离顶部 120px 处，算作“当前正在阅读”
-        // 你可以根据你的 Header 高度调整这个值 (例如 100 - 200 之间)
         const scrollY = window.scrollY + 120; 
 
         let currentId = null;
 
-        // 倒序遍历：找到最后一个 offsetTop 小于当前 scrollY 的标题
         for (let i = this.headings.length - 1; i >= 0; i--) {
             const heading = this.headings[i];
             const element = document.getElementById(heading.id);
             
             if (element && element.offsetTop <= scrollY) {
                 currentId = heading.id;
-                break; // 找到后立即停止
+                break; 
             }
         }
 
-        // 边界处理：如果滚动到底部，强制高亮最后一个
         const isBottom = (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50;
         if (isBottom && this.headings.length > 0) {
             currentId = this.headings[this.headings.length - 1].id;
@@ -178,7 +170,6 @@ export default {
         if (currentId) {
             this.activeHeadingId = currentId;
         } else if (this.headings.length > 0 && window.scrollY < 100) {
-            // 如果在页面最顶部，高亮第一个
             this.activeHeadingId = this.headings[0].id;
         }
       },
@@ -186,18 +177,16 @@ export default {
       scrollToHeading(id) {
         const element = document.getElementById(id);
         if (element) {
-          // 用户的原始偏移量，保持不变
           let offset = 385; 
           
-          this.isScrolling += 1; // 加锁
-          this.activeHeadingId = id; // 立即设置高亮，提供即时反馈
+          this.isScrolling += 1; 
+          this.activeHeadingId = id; 
 
           window.scrollTo({
             top: element.offsetTop + offset,
             behavior: 'smooth',
           });
           
-          // 滚动动画结束后解锁
           setTimeout(() => {
             this.isScrolling -= 1; 
           }, 600); 
@@ -272,7 +261,6 @@ export default {
         const contentContainer = this.$el.querySelector('.markdown-body');
         if (!contentContainer) return;
 
-        // Add Copy Buttons
         contentContainer.querySelectorAll('pre').forEach(pre => {
             if (pre.querySelector('.copy-btn')) return;
             
@@ -295,7 +283,6 @@ export default {
             pre.appendChild(btn);
         });
 
-        // Render GitHub Alerts
         const alertIcons = {
             note: '<svg class="octicon octicon-info" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>',
             tip: '<svg class="octicon octicon-light-bulb" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>',
@@ -315,10 +302,8 @@ export default {
                 const type = match[1].toLowerCase();
                 bq.classList.add('markdown-alert', `markdown-alert-${type}`);
                 
-                // Remove the marker
                 firstP.innerHTML = firstP.innerHTML.replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s?/i, '');
                 
-                // Add title
                 const titleDiv = document.createElement('div');
                 titleDiv.className = 'markdown-alert-title';
                 if (alertIcons[type]) {
@@ -340,12 +325,10 @@ export default {
         }
       }
     },
-    // *** 生命周期：挂载时添加滚动监听 ***
     async mounted() {
       console.log('PostView mounted for ID:', this.$route.params.id);
       window.addEventListener('scroll', this.handleScroll, { passive: true });
     },
-    // *** 生命周期：卸载前移除监听器 ***
     beforeUnmount() {
       window.removeEventListener('scroll', this.handleScroll);
       
@@ -362,38 +345,42 @@ export default {
 .page-link {
   height: 100px; 
   display: flex; 
-  /* gap: 30px;  可以保留，也可以去掉，因为我们下面会用宽度控制 */
   margin: 0 auto;
   width: 90%; 
   max-width: 1200px; 
-  justify-content: space-between; /* 保持两端对齐 */
+  justify-content: space-between; 
 }
 
 .pre-page {
   height: 100%; 
   padding: 0; 
   display: flex;
-  width: 48%; /* 强制占用接近一半的宽度 */
-  margin-right: auto; /* 确保它靠左（虽然通常默认就是靠左） */
+  width: 48%; 
+  margin-right: auto; 
 }
 
 .next-page {  
   height: 100%; 
   padding: 0; 
   display: flex; 
-  width: 48%; /* 强制占用接近一半的宽度 */
-  margin-left: auto; /* 【核心修改】：这一行会强制将它推到容器的最右边，即使没有上一篇 */
+  width: 48%; 
+  margin-left: auto; 
 }
+
+/* 底部上一篇/下一篇卡片增加毛玻璃背景 */
 .next-page .card,
 .pre-page .card {
     position: relative;
     height: 100%;
     width: 100%;
-    background-color: #181c27; 
+    background-color: rgba(24, 28, 39, 0.5); /* 替换为半透明色 */
+    backdrop-filter: blur(12px); /* 毛玻璃模糊 */
+    -webkit-backdrop-filter: blur(12px); /* 兼容 Safari */
     padding: 20px;
     cursor: pointer;
     overflow: hidden;
     border: 1px solid rgba(156, 197, 226, 0.3);
+    border-radius: 12px; /* 添加圆角更贴合现代 UI */
     transition: all 0.3s ease-in-out;
 }
 
@@ -445,17 +432,15 @@ export default {
 }
 
 @media (max-width: 768px) {
-    
     .page-title {
         font-size: 0.8em;
     }
 }
 
+/* 页面整体背景改为透明 */
 .post-view { 
   padding-top: 50px; 
-  box-shadow: 4px 4px 20px #101418;
-  background-color: #181c27;
-  
+  background-color: transparent; /* 去除原本实色背景 */
 }
 
 .header-container { 
@@ -491,11 +476,16 @@ export default {
   padding-bottom: 50px; 
 }
 
+/* 文章主体区域添加半透明及毛玻璃 */
 .content-wrapper {
   flex-grow: 1; 
   min-width: 0; 
-  background-color: rgb(37, 45, 56); 
-  box-shadow: 4px 4px 20px #101418;
+  background-color: rgba(37, 45, 56, 0.6); /* 替换为半透明色 */
+  backdrop-filter: blur(12px); /* 毛玻璃模糊 */
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* 调整阴影增强质感 */
+  border: 1px solid rgba(255, 255, 255, 0.05); /* 添加发光边缘 */
+  border-radius: 12px; /* 圆角边缘更美观 */
   padding: 40px 60px 40px 60px;
   color: rgb(196, 198, 201);
 }
@@ -548,7 +538,7 @@ export default {
 }
 
 .markdown-body ::v-deep pre {
-  background-color: rgb(13, 13, 13); 
+  background-color: rgba(13, 13, 13, 0.7); /* 让代码块稍微透明 */
   border-radius: 6px;
   padding: 1em;
   overflow-x: auto; 
@@ -659,6 +649,7 @@ export default {
   opacity: 1; 
 }
 
+/* 侧边导航栏增加半透明毛玻璃 */
 .toc-sidebar {
   width: 250px; 
   flex-shrink: 0; 
@@ -669,9 +660,12 @@ export default {
   overflow-y: auto; 
   padding: 16px;
   margin-left: 20px; 
-  background-color: rgb(37, 45, 56); 
-  box-shadow: 4px 4px 20px #101418;
-  border-radius: 8px; 
+  background-color: rgba(37, 45, 56, 0.6); /* 替换为半透明色 */
+  backdrop-filter: blur(12px); /* 毛玻璃模糊 */
+  -webkit-backdrop-filter: blur(12px); /* 兼容 Safari */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* 调整阴影 */
+  border: 1px solid rgba(255, 255, 255, 0.05); /* 添加发光边缘 */
+  border-radius: 12px; 
   color: rgb(196, 198, 201);
 }
 

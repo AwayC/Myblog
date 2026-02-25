@@ -1,4 +1,5 @@
 <template>
+  <CyberBackground />
   <Navbar/>
   <router-view v-slot="{ Component }">
     <transition name="fade" mode="out-in">
@@ -11,25 +12,30 @@
 
 <script>
 import Navbar from './components/Navbar.vue'; 
+import CyberBackground from './components/CyberBackground.vue'; // 引入组件
 
 export default { 
   components: { 
     Navbar, 
+    CyberBackground // 注册组件
   }
 }
 </script>
 
 <style>
+/* === 修改核心 ===：将之前的背景色全删掉，改为透明，否则会挡住光球 */
 html, body {
-  background-color: #2a2a2a;
+  /* background-color: #2a2a2a; (删掉或注释掉) */
+  background-color: transparent; 
   margin: 0;
   padding: 0;
-  scroll-padding-top: 85px; /* 根据导航栏实际高度调整 */
+  scroll-padding-top: 85px; 
   scroll-behavior: smooth;
 }
 
 #app {
-  background-color: #2a2a2a;
+  /* background-color: #2a2a2a; (删掉或注释掉) */
+  background-color: transparent;
   color: #e0e0e0; 
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;

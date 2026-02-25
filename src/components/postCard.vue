@@ -33,8 +33,6 @@
             </small></div>
         </div>
     </div>
-
-
 </template>
 
 <script>
@@ -43,34 +41,50 @@ export default {
     components: {
     }
 }
-
 </script>
 
 <style scoped>
-
 .my-card { 
     width: 80%; 
     margin: 0 auto;
-    border-radius: 20px;
-    background-color: #2d2d2d;
+    border-radius: 16px; /* 稍微调整圆角让其更现代 */
+    
+    /* 核心修改：毛玻璃背景 */
+    background-color: rgba(37, 45, 56, 0.5); /* 半透明底色 */
+    backdrop-filter: blur(12px); /* 模糊底层光球 */
+    -webkit-backdrop-filter: blur(12px); 
+    border: 1px solid rgba(255, 255, 255, 0.08); /* 微弱的高光描边 */
+    
     color: #e0e0e0; 
-    box-shadow: 4px 4px 20px rgb(12, 12, 12); 
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* 更柔和的深层阴影 */
     overflow: hidden; 
-    transition: 0.5s; 
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* 让动画更平滑 */
 }
 
-
+/* 悬停时的赛博霓虹发光效果 */
 .my-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 4px 4px 20px rgb(5, 73, 70); 
+    transform: translateY(-6px);
+    /* 边框变亮，并带有青蓝色发光阴影 */
+    border-color: rgba(109, 143, 147, 0.4); 
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 
+                0 0 20px rgba(0, 230, 255, 0.15); 
 }
 
 .card-body { 
-    padding: 20px 30px; 
+    padding: 24px 30px; 
+}
+
+/* 标题悬停时的一点小互动 */
+.card-title {
+    transition: color 0.3s;
+}
+.my-card:hover .card-title {
+    color: #5abbc6; /* 鼠标放上去时，标题微微泛起赛博青色 */
 }
 
 svg { 
-    color: #716f6f; 
+    color: #888; 
+    transition: color 0.3s;
 }
 
 .calender { 
@@ -78,11 +92,16 @@ svg {
 }
 
 .time { 
-    color: #717171;
+    color: #888;
+}
+
+/* 日历图标在 hover 时也有一点光泽变化 */
+.my-card:hover svg, 
+.my-card:hover .time {
+    color: #b0b0b0;
 }
 
 .tags { 
-    margin-bottom: 10px; 
+    margin-bottom: 12px; 
 }
-
 </style>
