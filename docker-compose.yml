@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 后端服务
+  # 只保留后端服务
   backend:
     build: ./backend
     container_name: blog-api
@@ -13,21 +13,6 @@ services:
       - ./backend/database.db:/app/database.db
     env_file:
       - ./backend/.env
-    networks:
-      - blog-network
-
-  # 前端服务 (使用 Nginx 托管已打包的 dist)
-  frontend:
-    image: nginx:alpine
-    container_name: blog-web
-    restart: always
-    ports:
-      - "80:80"
-    volumes:
-      # 挂载打包后的 dist 目录
-      - ./dist:/usr/share/nginx/html
-    depends_on:
-      - backend
     networks:
       - blog-network
 
