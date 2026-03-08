@@ -244,8 +244,10 @@ export default {
             console.log('Loading markdown for:', post.pagePath); 
             
             // Increment and fetch view count
-            const apiUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
-            fetch(`${apiUrl}/api/view/${post.id}`, { method: 'POST' })
+            const baseUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
+            const apiUrl = baseUrl.endsWith('/api') ? `${baseUrl}/view/${post.id}` : `${baseUrl}/api/view/${post.id}`;
+            
+            fetch(apiUrl, { method: 'POST' })
               .then(res => res.json())
               .then(data => {
                 if (data && data.views) {

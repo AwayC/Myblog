@@ -4,9 +4,12 @@ FROM node:18-alpine
 # 设置工作目录
 WORKDIR /app
 
-# 复制 package.json 并安装依赖
+# 复制 package.json
 COPY package*.json ./
-RUN npm install --production
+
+# 使用阿里云 npm 镜像加速安装 (针对国内服务器优化)
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm install --production
 
 # 复制所有文件
 COPY . .

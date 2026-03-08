@@ -124,8 +124,10 @@ export default {
       },
       async fetchStats() {
         try {
-          const apiUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
-          const response = await fetch(`${apiUrl}/api/stats`);
+          const baseUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
+          // 如果 baseUrl 已经以 /api 结尾，就不再加 /api
+          const apiUrl = baseUrl.endsWith('/api') ? `${baseUrl}/stats` : `${baseUrl}/api/stats`;
+          const response = await fetch(apiUrl);
           if (response.ok) {
             const stats = await response.json();
             const statsMap = {};
