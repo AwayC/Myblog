@@ -22,6 +22,14 @@
               </svg>
         </span>
         <span class="time">{{ post.time }}</span>
+        <span class="views ms-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-eye" width="22" height="22" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <circle cx="12" cy="12" r="2" />
+            <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" />
+          </svg>
+          <span class="ms-1">{{ views }} views</span>
+        </span>
       </div>
       <div class='tags'>
         <tagBase v-for='tag in post.tags' :key="tag.name" :style="{backgroundColor: getTagColor(tag)}">
@@ -102,6 +110,7 @@ export default {
           prevPost: null,
           nextPost: null,
           scrollTimer: null, 
+          views: 0,
         }
     },
     computed: {
@@ -233,6 +242,18 @@ export default {
           
           if (post && post.pagePath) {
             console.log('Loading markdown for:', post.pagePath); 
+            
+            // Increment and fetch view count
+            const apiUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
+            fetch(`${apiUrl}/api/view/${post.id}`, { method: 'POST' })
+              .then(res => res.json())
+              .then(data => {
+                if (data && data.views) {
+                  this.views = data.views;
+                }
+              })
+              .catch(err => console.error("Failed to update view count:", err));
+
             const markdownResponse = await fetch(`/posts/${post.pagePath}.md`); 
             if (!markdownResponse.ok) {
               throw new Error(`HTTP error! status: ${markdownResponse.status}`);
@@ -458,12 +479,17 @@ export default {
   margin-top: 10px; 
 }
 
-.calender { 
+.calender, .views { 
   margin: 10px; 
 }
 
-.calender svg { 
+.calender svg, .views svg { 
   transform: translateY(-2px);
+  color: #888;
+}
+
+.views {
+  color: #888;
 }
 
 .main-content-layout {

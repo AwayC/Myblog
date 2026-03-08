@@ -11,7 +11,7 @@
       </div>
 
       <div class="col-8">
-        <div v-for='post in posts' :key="post.id" class="container" @click="openPost(post.id)">
+        <div v-for='post in paginatedPosts' :key="post.id" class="container post-item" @click="openPost(post.id)">
               <postCard class="postCard">
                 <template v-if="post.has_img" #has_img>
                   <img class='my-card-img' :src="getPostImage(post.img)" :alt="post.name">
@@ -32,8 +32,27 @@
                 <template #time>
                   {{ post.time }}
                 </template>
+
+                <template #views>
+                  {{ postStats[post.id] || 0 }} views
+                </template>
               </postCard>  
           </div>
+
+          <!-- Pagination -->
+          <nav v-if="totalPages > 1" class="pagination-nav mt-4 mb-5 d-flex justify-content-center">
+            <ul class="pagination">
+              <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                <button class="page-link" @click="changePage(currentPage - 1)">Previous</button>
+              </li>
+              <li v-for="page in totalPages" :key="page" class="page-item" :class="{ active: currentPage === page }">
+                <button class="page-link" @click="changePage(page)">{{ page }}</button>
+              </li>
+              <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                <button class="page-link" @click="changePage(currentPage + 1)">Next</button>
+              </li>
+            </ul>
+          </nav>
       </div>
       <div class="col-1">
         
@@ -67,7 +86,20 @@ export default {
         posts: [], 
         tagColorMap: {}, 
         isLoading: true,
+        currentPage: 1,
+        pageSize: 3,
+        postStats: {},
       };
+    },
+    computed: {
+      totalPages() {
+        return Math.ceil(this.posts.length / this.pageSize);
+      },
+      paginatedPosts() {
+        const start = (this.currentPage - 1) * this.pageSize;
+        const end = start + this.pageSize;
+        return this.posts.slice(start, end);
+      }
     },
     methods: {
       getPostImage(imagePath) {
@@ -89,6 +121,39 @@ export default {
           });
         });
         return Promise.all(promises);
+      },
+      async fetchStats() {
+        try {
+          const apiUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
+          const response = await fetch(`${apiUrl}/api/stats`);
+          if (response.ok) {
+            const stats = await response.json();
+            const statsMap = {};
+            stats.forEach(s => {
+              statsMap[s.post_id] = s.views;
+            });
+            this.postStats = statsMap;
+          }
+        } catch (error) {
+          console.error("Failed to fetch article stats:", error);
+        }
+      },
+      changePage(page) {
+        if (page < 1 || page > this.totalPages) return;
+        this.currentPage = page;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.animatePosts();
+      },
+      animatePosts() {
+        this.$nextTick(() => {
+          gsap.from(".post-item", {
+            duration: 0.6, 
+            y: 30, 
+            opacity: 0, 
+            stagger: 0.1, 
+            ease: "power2.out"
+          }); 
+        });
       }
     },
     setup() { 
@@ -118,20 +183,14 @@ export default {
         // 2. 预加载所有文章图片
         await this.preloadImages(this.posts);
 
-        // 3. 图片加载完成后，隐藏 Loading，显示内容
+        // 3. 统计阅读量
+        await this.fetchStats();
+
+        // 4. 图片加载完成后，隐藏 Loading，显示内容
         this.isLoading = false;
 
-        // 4. 执行进场动画
-        this.$nextTick(() => {
-          gsap.from(".container", {
-            duration: 0.8, 
-            y: 50, 
-            opacity: 0, 
-            stagger: 0.15, 
-            ease: "back.out(1.7)",
-            delay: 0.1 
-          }); 
-        });
+        // 5. 执行进场动画
+        this.animatePosts();
 
       } catch (error) {
         console.error("加载数据失败:", error);
@@ -171,6 +230,38 @@ export default {
 .container { 
     padding-top: 20px;
     padding-bottom: 15px; 
+}
+
+/* Pagination Styles */
+.pagination-nav {
+  margin-top: 2rem;
+}
+
+.page-link {
+  background-color: rgba(37, 45, 56, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}
+
+.page-link:hover {
+  background-color: rgba(90, 187, 198, 0.2);
+  color: #5abbc6;
+  border-color: #5abbc6;
+}
+
+.page-item.active .page-link {
+  background-color: #5abbc6;
+  border-color: #5abbc6;
+  color: #1a1a1a;
+}
+
+.page-item.disabled .page-link {
+  background-color: rgba(37, 45, 56, 0.3);
+  color: #666;
+  border-color: rgba(255, 255, 255, 0.05);
 }
 
 .postCard { 

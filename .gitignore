@@ -23,4 +23,4 @@ pnpm-debug.log*
 
 docs
 
-public/page/
+public/page/\n# Backend\nbackend/node_modules/\nbackend/database.db

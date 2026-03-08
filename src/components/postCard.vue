@@ -30,6 +30,14 @@
                 <span class="time">
                     <slot name="time"></slot>
                 </span>
+                <span v-if="$slots.views" class="views ms-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-eye" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <circle cx="12" cy="12" r="2" />
+                        <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" />
+                    </svg>
+                    <span class="ms-1"><slot name="views"></slot></span>
+                </span>
             </small></div>
         </div>
     </div>
@@ -77,7 +85,7 @@ export default {
 /* 标题悬停时的一点小互动 */
 .card-title {
     transition: color 0.3s;
-}
+}   
 .my-card:hover .card-title {
     color: #5abbc6; /* 鼠标放上去时，标题微微泛起赛博青色 */
 }
@@ -91,13 +99,15 @@ svg {
     margin-right: 5px; 
 }
 
-.time { 
+.time,
+.views { 
     color: #888;
 }
 
-/* 日历图标在 hover 时也有一点光泽变化 */
+/* 日历/视图图标在 hover 时也有一点光泽变化 */
 .my-card:hover svg, 
-.my-card:hover .time {
+.my-card:hover .time,
+.my-card:hover .views {
     color: #b0b0b0;
 }
 
