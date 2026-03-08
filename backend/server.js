@@ -18,9 +18,7 @@ const defaultDevOrigins = ['http://localhost:8080', 'http://localhost:8081', 'ht
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        
         const isAllowed = allowedOrigins.includes(origin);
         const isDevAllowed = !isProduction && defaultDevOrigins.includes(origin);
 
@@ -38,25 +36,6 @@ app.use(cors({
 app.use(express.json());
 
 let db;
-
-(async () => {
-    try {
-        db = await open({
-            filename: path.join(__dirname, 'database.db'),
-            driver: sqlite3.Database
-        });
-
-        await db.exec(`
-            CREATE TABLE IF NOT EXISTS post_stats (
-                post_id INTEGER PRIMARY KEY,
-                views INTEGER DEFAULT 0
-            )
-        `);
-        console.log('Database initialized');
-    } catch (err) {
-        console.error('Failed to initialize database:', err);
-    }
-})();
 
 // 获取所有文章统计信息
 app.get('/api/stats', async (req, res) => {
@@ -100,11 +79,34 @@ app.post('/api/view/:id', async (req, res) => {
     }
 });
 
-// 处理所有未匹配路径，返回 JSON 而不是 HTML
+// 处理所有未匹配路径
 app.use((req, res) => {
     res.status(404).json({ error: "Endpoint not found" });
 });
 
-app.listen(port, () => {
-    console.log(`Backend server running at http://localhost:${port}`);
-});
+// 启动服务器
+const startServer = async () => {
+    try {
+        db = await open({
+            filename: path.join(__dirname, 'database.db'),
+            driver: sqlite3.Database
+        });
+
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS post_stats (
+                post_id INTEGER PRIMARY KEY,
+                views INTEGER DEFAULT 0
+            )
+        `);
+        console.log('Database initialized successfully');
+
+        app.listen(port, () => {
+            console.log(`Backend server running at http://localhost:${port}`);
+        });
+    } catch (err) {
+        console.error('Failed to initialize database or start server:', err);
+        process.exit(1);
+    }
+};
+
+startServer();
