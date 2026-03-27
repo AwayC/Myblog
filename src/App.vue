@@ -8,6 +8,16 @@
       </keep-alive>
     </transition>
   </router-view>
+  <footer class="footer">
+    <div class="copyright">
+      © 2025 powered AWAY<br>
+      <a href="https://beian.miit.gov.cn/" rel="noreferrer" target="_blank">
+        <img src="./assets/beian.png" alt="备案号" class="beian-icon"> 
+        <span> 浙公网安备 33019202002917号</span>
+      </a> | 
+      <a href="https://beian.miit.gov.cn/" rel="noreferrer" target="_blank">浙ICP备2026012504号</a>
+    </div>
+  </footer>
 </template>
 
 <script>
@@ -56,6 +66,24 @@ nav {
   color: #777;
   text-align: center;
   font-family:  "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  line-height: 1.8;
+}
+
+.copyright a {
+  color: #777;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.copyright a:hover {
+  color: #c0c0c0;
+}
+
+.beian-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  margin-right: 2px;
 }
 
 .fade-enter-active,

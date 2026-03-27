@@ -76,13 +76,6 @@
         </div>
       </div>
     </div>
-    
-
-    <div class="footer" style='height: 100px'>
-      <div class="copyright">
-        © 2025 powered AWAY
-      </div>
-    </div>
   </div>
 </template>
 
