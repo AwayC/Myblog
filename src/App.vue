@@ -8,26 +8,19 @@
       </keep-alive>
     </transition>
   </router-view>
-  <footer class="footer">
-    <div class="copyright">
-      © 2025 powered AWAY<br>
-      <a href="https://beian.miit.gov.cn/" rel="noreferrer" target="_blank">
-        <img src="./assets/beian.png" alt="备案号" class="beian-icon"> 
-        <span> 浙公网安备 33019202002917号</span>
-      </a> | 
-      <a href="https://beian.miit.gov.cn/" rel="noreferrer" target="_blank">浙ICP备2026012504号</a>
-    </div>
-  </footer>
+  <MainFooter />
 </template>
 
 <script>
 import Navbar from './components/Navbar.vue'; 
-import CyberBackground from './components/CyberBackground.vue'; // 引入组件
+import CyberBackground from './components/CyberBackground.vue';
+import MainFooter from './components/Footer.vue';
 
 export default { 
   components: { 
     Navbar, 
-    CyberBackground // 注册组件
+    CyberBackground,
+    MainFooter
   }
 }
 </script>
@@ -41,6 +34,7 @@ html, body {
   padding: 0;
   scroll-padding-top: 85px; 
   scroll-behavior: smooth;
+  overflow-x: hidden; /* 防止出现横向滚动条 */
 }
 
 #app {
@@ -51,39 +45,12 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-
 
 nav {
   padding: 30px;
-}
-
-.footer { 
-  padding: 40px; 
-}
-
-.copyright {
-  color: #777;
-  text-align: center;
-  font-family:  "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-  line-height: 1.8;
-}
-
-.copyright a {
-  color: #777;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.copyright a:hover {
-  color: #c0c0c0;
-}
-
-.beian-icon {
-  width: 1em;
-  height: 1em;
-  vertical-align: -0.15em;
-  margin-right: 2px;
 }
 
 .fade-enter-active,

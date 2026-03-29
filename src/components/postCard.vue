@@ -69,6 +69,12 @@ export default {
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* 让动画更平滑 */
 }
 
+@media (max-width: 768px) {
+    .my-card {
+        width: 92%;
+    }
+}
+
 /* 悬停时的赛博霓虹发光效果 */
 .my-card:hover {
     transform: translateY(-6px);

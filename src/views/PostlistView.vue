@@ -1,16 +1,16 @@
 <template>
-  <div class="row view-container">
+  <div class="container-fluid view-container">
     <!-- Loading Indicator -->
     <div v-if="isLoading" class="loading-container">
       <div class="spinner"></div>
     </div>
 
-    <div v-else class="row" style="width: 100%; margin: 0;">
-      <div class="col-3">
+    <div v-else class="row justify-content-center">
+      <div class="col-md-3">
           <infoCard class="info-card"></infoCard>
       </div>
 
-      <div class="col-8">
+      <div class="col-md-8">
         <div v-for='post in paginatedPosts' :key="post.id" class="container post-item" @click="openPost(post.id)">
               <postCard class="postCard">
                 <template v-if="post.has_img" #has_img>
@@ -143,13 +143,17 @@ export default {
       },
       animatePosts() {
         this.$nextTick(() => {
-          gsap.from(".post-item", {
-            duration: 0.6, 
-            y: 30, 
-            opacity: 0, 
-            stagger: 0.1, 
-            ease: "power2.out"
-          }); 
+          gsap.fromTo(".post-item", 
+            { y: 30, opacity: 0 },
+            {
+              duration: 0.6, 
+              y: 0, 
+              opacity: 1, 
+              stagger: 0.1, 
+              ease: "power2.out",
+              clearProps: "all" // 动画结束后清除行内样式，防止冲突
+            }
+          ); 
         });
       }
     },
@@ -201,6 +205,8 @@ export default {
 .view-container { 
     padding-top: 60px;
     min-height: 100vh; 
+    position: relative; /* 确保 z-index 生效 */
+    z-index: 1; /* 提升层级，防止被背景遮挡 */
 }
 
 .loading-container {
@@ -284,16 +290,16 @@ export default {
   }
 
   .col-3 {
-    display: block; /* 显示包含 infoCard 的列 */
-    width: 100%; /* 让列宽度占满屏幕 */
+    display: block;
+    width: 100%;
   }
 
   .col-8 {
-    width: 100%; /* 内容区域占满屏幕 */
+    width: 100%;
   }
 
   .col-1 {
-    display: none; /* 隐藏空白列 */
+    display: none;
   }
 
   .info-card {
