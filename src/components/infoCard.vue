@@ -8,8 +8,8 @@
             </div>
             
             <h2 class="cyber-text mb-3">AWAY</h2>
-            <p class="bio-text">永远坚持热爱</p>
-            <p class="bio-text">The future belongs to those who believe in the beauty of their dreams.</p>
+            <p class="bio-text">长风破浪，一往无前</p>
+            <p class="bio-text">Flat out! Just push, push, and push!</p>
 
             <div class="social-links mt-4">
                 <a href="https://github.com/AwayC/" class="social-link" target="_blank" rel="noopener noreferrer">
