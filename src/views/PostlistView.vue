@@ -7,10 +7,14 @@
 
     <div v-else class="row justify-content-center">
       <div class="col-md-3">
-          <infoCard class="info-card"></infoCard>
+          <infoCard class="info-card" :search-query="searchQuery" @update:searchQuery="searchQuery = $event"></infoCard>
       </div>
 
       <div class="col-md-8">
+        <div v-if="filteredPosts.length === 0 && posts.length > 0" class="no-results">
+          No articles match your search.
+        </div>
+
         <div v-for='post in paginatedPosts' :key="post.id" class="container post-item" @click="openPost(post.id)">
               <postCard class="postCard">
                 <template v-if="post.has_img" #has_img>
@@ -78,22 +82,45 @@ export default {
     }, 
     data() {
       return {
-        posts: [], 
-        tagColorMap: {}, 
+        posts: [],
+        tagColorMap: {},
         isLoading: true,
         currentPage: 1,
-        pageSize: 3,
+        pageSize: 6,
         postStats: {},
+        searchQuery: '',
       };
     },
     computed: {
+      filteredPosts() {
+        // 按 id 降序：最新文章在最前面
+        let result = [...this.posts].sort((a, b) => b.id - a.id);
+
+        if (this.searchQuery.trim()) {
+          const raw = this.searchQuery.trim();
+          // 提取 #tag 搜索词
+          const tagMatch = raw.match(/#(\S+)/g);
+          if (tagMatch) {
+            const tagNames = tagMatch.map(t => t.slice(1).toLowerCase());
+            result = result.filter(p =>
+              p.tags && p.tags.some(t => tagNames.includes(t.name.toLowerCase()))
+            );
+          }
+          // 提取普通文本搜索词（去掉 #tag 部分）
+          const textPart = raw.replace(/#\S+/g, '').trim().toLowerCase();
+          if (textPart) {
+            result = result.filter(p => p.name.toLowerCase().includes(textPart));
+          }
+        }
+        return result;
+      },
       totalPages() {
-        return Math.ceil(this.posts.length / this.pageSize);
+        return Math.ceil(this.filteredPosts.length / this.pageSize);
       },
       paginatedPosts() {
         const start = (this.currentPage - 1) * this.pageSize;
         const end = start + this.pageSize;
-        return this.posts.slice(start, end);
+        return this.filteredPosts.slice(start, end);
       }
     },
     methods: {
@@ -108,7 +135,7 @@ export default {
       },
       async fetchStats() {
         try {
-          const baseUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
+          const baseUrl = process.env.VUE_APP_API_URL || '';
           // 如果 baseUrl 已经以 /api 结尾，就不再加 /api
           const apiUrl = baseUrl.endsWith('/api') ? `${baseUrl}/stats` : `${baseUrl}/api/stats`;
           const response = await fetch(apiUrl);
@@ -127,8 +154,6 @@ export default {
       changePage(page) {
         if (page < 1 || page > this.totalPages) return;
         this.currentPage = page;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        this.animatePosts();
       },
       animatePosts() {
         this.$nextTick(() => {
@@ -158,10 +183,13 @@ export default {
     }, 
     async mounted() {
       try {
-        // 1. 并行加载数据和标签映射
+        // 从 API 加载文章列表和标签映射
+        const apiBase = process.env.VUE_APP_API_URL || '';
+        const apiRoot = apiBase.endsWith('/api') ? apiBase : `${apiBase}/api`;
+
         const [postsResponse, tagMapResponse] = await Promise.all([
-          fetch('/posts/list.json'),
-          fetch('/tags/tagmap.json')
+          fetch(`${apiRoot}/posts`),
+          fetch(`${apiRoot}/tags`)
         ]);
 
         if (!postsResponse.ok) throw new Error(`Posts HTTP error! status: ${postsResponse.status}`);
@@ -170,10 +198,10 @@ export default {
         this.posts = await postsResponse.json();
         this.tagColorMap = await tagMapResponse.json();
 
-        // 2. 数据加载完成，立即显示内容（图片由浏览器按需懒加载）
+        // 数据加载完成，立即显示内容（图片由浏览器按需懒加载）
         this.isLoading = false;
 
-        // 3. 统计阅读量（不阻塞渲染）
+        // 统计阅读量（不阻塞渲染）
         this.fetchStats();
 
         // 4. 执行进场动画
@@ -218,9 +246,17 @@ export default {
   to { transform: rotate(360deg); }
 }
 
-.container { 
+.container {
     padding-top: 20px;
-    padding-bottom: 15px; 
+    padding-bottom: 15px;
+}
+
+/* Search Bar */
+.no-results {
+  text-align: center;
+  color: #888;
+  padding: 40px 0;
+  font-size: 1em;
 }
 
 /* Pagination Styles */
@@ -265,11 +301,11 @@ export default {
 }
 
 .info-card {
-  margin-left: 20px; 
-  margin-top: 100px; 
-  position: fixed;
-  width: 25%; 
+  margin-left: 20px;
+  margin-top: 100px;
 }
+
+/* No need for sidebar-fixed or search-bar here — they're inside infoCard now */
 
 /* 手机端适配 */
 @media (max-width: 768px) {

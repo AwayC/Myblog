@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # 只保留后端服务
   backend:
     build: ./backend
     container_name: blog-api
@@ -9,8 +8,11 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # 持久化数据库：宿主机 ./backend/database.db 挂载到容器中
       - ./backend/database.db:/app/database.db
+      - /var/www/myweb/posts:/public/posts
+      - /var/www/myweb/tags:/public/tags
+      - /var/www/myweb/blogroll:/public/blogroll
+      - /var/www/myweb/profile.json:/public/profile.json
     env_file:
       - ./backend/.env
     networks:

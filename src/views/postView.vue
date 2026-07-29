@@ -108,8 +108,11 @@ export default {
     },
     computed: {
       safeContent() {
-            if (this.$markdown) { 
-                return DOMPurify.sanitize(this.$markdown.render(this.postContent || ''));
+            if (this.$markdown) {
+                let html = this.$markdown.render(this.postContent || '');
+                // 替换 @/posts/ 路径为 /posts/ 确保图片能显示
+                html = html.replace(/(src|href)="@\/posts\//g, '$1="/posts/');
+                return DOMPurify.sanitize(html);
             }
             return '';
       },
@@ -219,28 +222,34 @@ export default {
 
       async loadPostData(postId) {
         try {
-          const postsResponse = await fetch('/posts/list.json'); 
-          if (!postsResponse.ok) {
-            throw new Error(`HTTP error! status: ${postsResponse.status}`);
+          const baseUrl = process.env.VUE_APP_API_URL || '';
+          const apiRoot = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+
+          // 并行加载文章详情、标签、列表
+          const [postResponse, tagMapResponse, postsResponse] = await Promise.all([
+            fetch(`${apiRoot}/posts/${postId}`),
+            fetch(`${apiRoot}/tags`),
+            fetch(`${apiRoot}/posts`),
+          ]);
+
+          if (!tagMapResponse.ok) throw new Error(`Tags HTTP error! status: ${tagMapResponse.status}`);
+          if (!postsResponse.ok) throw new Error(`Posts HTTP error! status: ${postsResponse.status}`);
+          if (!postResponse.ok) {
+            router.push({ name: '404' });
+            return;
           }
+
+          this.tagColorMap = await tagMapResponse.json();
           this.posts = await postsResponse.json();
 
-          const tagMapResponse = await fetch('/tags/tagmap.json'); 
-          if (!tagMapResponse.ok) {
-            throw new Error(`HTTP error! status: ${tagMapResponse.status}`);
-          }
-          this.tagColorMap = await tagMapResponse.json();
+          const post = await postResponse.json();
 
-          const post = this.posts.find(p => p.id === Number(postId)); 
-          
           if (post && post.pagePath) {
-            console.log('Loading markdown for:', post.pagePath); 
-            
-            // Increment and fetch view count
-            const baseUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
-            const apiUrl = baseUrl.endsWith('/api') ? `${baseUrl}/view/${post.id}` : `${baseUrl}/api/view/${post.id}`;
-            
-            fetch(apiUrl, { method: 'POST' })
+            console.log('Loading post:', post.name);
+
+            // 阅读量统计
+            const viewUrl = baseUrl.endsWith('/api') ? `${baseUrl}/view/${post.id}` : `${baseUrl}/api/view/${post.id}`;
+            fetch(viewUrl, { method: 'POST' })
               .then(res => res.json())
               .then(data => {
                 if (data && data.views) {
@@ -249,28 +258,24 @@ export default {
               })
               .catch(err => console.error("Failed to update view count:", err));
 
-            const markdownResponse = await fetch(`/posts/${post.pagePath}.md`); 
-            if (!markdownResponse.ok) {
-              throw new Error(`HTTP error! status: ${markdownResponse.status}`);
-            }
-            this.post = post; 
-            this.postContent = await markdownResponse.text();
+            this.post = post;
+            this.postContent = post.content || '';
 
             const currentPostIndex = this.posts.findIndex(p => p.id === post.id);
             this.prevPost = currentPostIndex > 0 ? this.posts[currentPostIndex - 1] : null;
             this.nextPost = currentPostIndex < this.posts.length - 1 ? this.posts[currentPostIndex + 1] : null;
 
             this.$nextTick(() => {
-              this.extractHeadings(); 
+              this.extractHeadings();
               this.processMarkdownEnhancements();
             });
 
           } else {
-            router.push({name: "404"}); 
+            router.push({name: "404"});
           }
         } catch (error) {
           console.error("加载文章或标签数据失败:", error);
-          router.push({name: "404"}); 
+          router.push({name: "404"});
         }
       },
       processMarkdownEnhancements() {

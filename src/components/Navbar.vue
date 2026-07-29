@@ -22,6 +22,9 @@
                     <li class="nav-item">
                         <a class="nav-link orb-font index-link" target="_blank" href="./page/cube/index.html" @click="closeNavbarCollapse">cube</a>
                     </li>
+                    <li class="nav-item">
+                        <router-link class="nav-link orb-font admin-link" to="/admin" @click="closeNavbarCollapse">admin</router-link>
+                    </li>
                     
                 </ul>
                 <ul class="navbar-nav right-border">
@@ -215,6 +218,15 @@ export default {
 
 .bilibili-link:hover {
   color: #ff69b4 !important; /* 更亮的粉色悬停效果 */
+}
+
+.admin-link {
+    color: #888 !important;
+    transition: all 300ms;
+}
+.admin-link:hover {
+    color: #5abbc6 !important;
+    text-shadow: 2px 0 0 #5abbc6;
 }
 
 .navbar { 
