@@ -11,3 +11,6 @@
 
 > [!NOTE]
 >  note
+
+> [!NOTE]
+>  note
