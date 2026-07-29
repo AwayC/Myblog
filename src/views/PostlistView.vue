@@ -14,7 +14,7 @@
         <div v-for='post in paginatedPosts' :key="post.id" class="container post-item" @click="openPost(post.id)">
               <postCard class="postCard">
                 <template v-if="post.has_img" #has_img>
-                  <img class='my-card-img' :src="getPostImage(post.img)" :alt="post.name">
+                  <img class='my-card-img' :src="getPostImage(post.img)" :alt="post.name" loading="lazy">
                 </template>
 
                 <template #tags>
@@ -106,17 +106,6 @@ export default {
       getTagColor(tag) { 
           return this.tagColorMap[tag.name] || this.tagColorMap['default']; 
       },
-      preloadImages(posts) {
-        const promises = posts.filter(post => post.has_img && post.img).map(post => {
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.src = this.getPostImage(post.img);
-            img.onload = resolve;
-            img.onerror = resolve; // 即使加载失败也继续，避免卡死
-          });
-        });
-        return Promise.all(promises);
-      },
       async fetchStats() {
         try {
           const baseUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
@@ -167,9 +156,9 @@ export default {
         openPost, 
       }
     }, 
-    async mounted() { 
+    async mounted() {
       try {
-        // 1. 并行加载数据
+        // 1. 并行加载数据和标签映射
         const [postsResponse, tagMapResponse] = await Promise.all([
           fetch('/posts/list.json'),
           fetch('/tags/tagmap.json')
@@ -181,21 +170,20 @@ export default {
         this.posts = await postsResponse.json();
         this.tagColorMap = await tagMapResponse.json();
 
-        // 2. 预加载所有文章图片
-        await this.preloadImages(this.posts);
-
-        // 3. 统计阅读量
-        await this.fetchStats();
-
-        // 4. 图片加载完成后，隐藏 Loading，显示内容
+        // 2. 数据加载完成，立即显示内容（图片由浏览器按需懒加载）
         this.isLoading = false;
 
-        // 5. 执行进场动画
-        this.animatePosts();
+        // 3. 统计阅读量（不阻塞渲染）
+        this.fetchStats();
+
+        // 4. 执行进场动画
+        this.$nextTick(() => {
+          this.animatePosts();
+        });
 
       } catch (error) {
         console.error("加载数据失败:", error);
-        this.isLoading = false; // 出错也要显示内容（虽然可能是空的）
+        this.isLoading = false; // 出错也要显示内容
       }
     }
 }
