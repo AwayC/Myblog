@@ -833,6 +833,9 @@ export default {
   height: 28px;
   cursor: pointer;
   font-size: 12px;
+  display: inline-flex;
+  justify-content: center; /* 水平居中 */
+  align-items: center;
 }
 
 .btn-delete-sm:hover { background: rgba(248, 81, 73, 0.35); }

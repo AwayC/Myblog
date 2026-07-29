@@ -679,18 +679,23 @@ export default {
 .toc-sidebar {
   width: 250px; 
   flex-shrink: 0; 
+  
+  /* 必须属性 */
   position: sticky; 
-  top: 80px; 
-  height: auto; 
-  max-height: calc(100vh - 80px - 20px); 
+  top: 100px; /* 确保 top 值大于你顶部 Header/Navbar 的高度 */
+  align-self: flex-start; /* 关键：阻止 flex 把侧边栏拉伸到和文章一样高 */
+
+  max-height: calc(100vh - 120px); 
   overflow-y: auto; 
+  
+  /* 毛玻璃等新样式保留 */
   padding: 16px;
   margin-left: 20px; 
-  background-color: rgba(37, 45, 56, 0.6); /* 替换为半透明色 */
-  backdrop-filter: blur(12px); /* 毛玻璃模糊 */
-  -webkit-backdrop-filter: blur(12px); /* 兼容 Safari */
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* 调整阴影 */
-  border: 1px solid rgba(255, 255, 255, 0.05); /* 添加发光边缘 */
+  background-color: rgba(37, 45, 56, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px; 
   color: rgb(196, 198, 201);
 }

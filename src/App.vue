@@ -34,7 +34,7 @@ html, body {
   padding: 0;
   scroll-padding-top: 85px;
   scroll-behavior: smooth;
-  overflow-x: hidden; /* 防止出现横向滚动条 */
+  overflow-x: clip; /* 防止出现横向滚动条 */
 }
 
 /* 全局滚动条圆角样式 */
