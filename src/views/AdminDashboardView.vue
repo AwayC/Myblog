@@ -11,7 +11,11 @@
     </div>
 
     <div class="posts-table-wrapper">
-      <table class="posts-table" v-if="posts.length > 0">
+      <div v-if="postsLoading" class="loading-state">
+        <div class="spinner"></div>
+        <span>Loading posts...</span>
+      </div>
+      <table class="posts-table" v-else-if="posts.length > 0">
         <thead>
           <tr>
             <th>ID</th>
@@ -74,6 +78,11 @@
 
         <!-- Profile settings -->
         <div v-if="settingsTab === 'profile'" class="settings-panel">
+          <div v-if="profileLoading" class="loading-state">
+            <div class="spinner"></div>
+            <span>Loading profile...</span>
+          </div>
+          <template v-else>
           <div class="form-group">
             <label>Display Name</label>
             <input v-model="profile.name" type="text" class="form-control" placeholder="AWAY" />
@@ -101,10 +110,16 @@
             {{ savingProfile ? 'Saving...' : 'Save Profile' }}
           </button>
           <span v-if="profileMsg" class="save-msg">{{ profileMsg }}</span>
+          </template>
         </div>
 
         <!-- Blogroll settings -->
         <div v-if="settingsTab === 'blogroll'" class="settings-panel">
+          <div v-if="blogrollLoading" class="loading-state">
+            <div class="spinner"></div>
+            <span>Loading blogroll...</span>
+          </div>
+          <template v-else>
           <div class="blogroll-list">
             <div v-for="(b, i) in blogroll" :key="i" class="blogroll-item">
               <input v-model="b.name" class="form-control" placeholder="Name" />
@@ -117,10 +132,16 @@
             {{ savingBlogroll ? 'Saving...' : 'Save Blogroll' }}
           </button>
           <span v-if="blogrollMsg" class="save-msg">{{ blogrollMsg }}</span>
+          </template>
         </div>
 
         <!-- Tags settings -->
         <div v-if="settingsTab === 'tags'" class="settings-panel">
+          <div v-if="tagsLoading" class="loading-state">
+            <div class="spinner"></div>
+            <span>Loading tags...</span>
+          </div>
+          <template v-else>
           <div class="tags-list">
             <div v-for="(color, name) in editableTags" :key="name" class="tag-item">
               <div class="tag-item-preview">
@@ -151,6 +172,7 @@
             {{ savingTags ? 'Saving...' : 'Save Tags' }}
           </button>
           <span v-if="tagsMsg" class="save-msg">{{ tagsMsg }}</span>
+          </template>
         </div>
       </div>
     </div>
@@ -180,12 +202,16 @@ export default {
   data() {
     return {
       posts: [],
+      postsLoading: true,
       username: '',
       deleteTarget: null,
       deleting: false,
       // Settings
       showSettings: false,
       settingsTab: 'profile',
+      profileLoading: false,
+      blogrollLoading: false,
+      tagsLoading: false,
       profile: {
         name: '',
         mottos: [],
@@ -250,6 +276,7 @@ export default {
       };
     },
     async fetchPosts() {
+      this.postsLoading = true;
       try {
         const res = await fetch(this.apiUrl('/posts'));
         if (res.ok) {
@@ -259,6 +286,8 @@ export default {
         }
       } catch (err) {
         console.error('加载文章失败:', err);
+      } finally {
+        this.postsLoading = false;
       }
     },
     createPost() {
@@ -308,16 +337,17 @@ export default {
       if (this.showSettings) {
         if (this.settingsTab === 'profile') this.loadProfile();
         if (this.settingsTab === 'blogroll') this.loadBlogroll();
-        if (this.settingsTab === 'tags') this.initEditableTags();
+        if (this.settingsTab === 'tags') this.loadTagsForEdit();
       }
     },
     switchSettingsTab(tab) {
       this.settingsTab = tab;
       if (tab === 'profile') this.loadProfile();
       if (tab === 'blogroll') this.loadBlogroll();
-      if (tab === 'tags') this.initEditableTags();
+      if (tab === 'tags') this.loadTagsForEdit();
     },
     async loadProfile() {
+      this.profileLoading = true;
       try {
         const res = await fetch(this.apiUrl('/profile'));
         if (res.ok) {
@@ -330,7 +360,9 @@ export default {
           };
           this.profileMottosText = this.profile.mottos.join('\n');
         }
-      } catch { /* 静默 */ }
+      } catch { /* 静默 */ } finally {
+        this.profileLoading = false;
+      }
     },
     async saveProfile() {
       this.savingProfile = true;
@@ -355,10 +387,13 @@ export default {
       }
     },
     async loadBlogroll() {
+      this.blogrollLoading = true;
       try {
         const res = await fetch(this.apiUrl('/blogroll'));
         if (res.ok) this.blogroll = await res.json();
-      } catch { /* 静默 */ }
+      } catch { /* 静默 */ } finally {
+        this.blogrollLoading = false;
+      }
     },
     addBlogroll() {
       this.blogroll.push({ name: '', link: '' });
@@ -390,10 +425,17 @@ export default {
 
     // ---- Tags ----
     async loadTags() {
+      this.tagsLoading = true;
       try {
         const res = await fetch(this.apiUrl('/tags'));
         if (res.ok) this.tags = await res.json();
-      } catch { /* silent */ }
+      } catch { /* silent */ } finally {
+        this.tagsLoading = false;
+      }
+    },
+    async loadTagsForEdit() {
+      await this.loadTags();
+      this.initEditableTags();
     },
     initEditableTags() {
       const { default: _default, ...rest } = this.tags;
@@ -553,6 +595,30 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   overflow: hidden;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #888;
+  font-size: 0.9em;
+  gap: 12px;
+}
+
+.loading-state .spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(90, 187, 198, 0.2);
+  border-top-color: #5abbc6;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .posts-table {
