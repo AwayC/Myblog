@@ -497,9 +497,12 @@ export default {
       // 后端没启动也不跳走
     }
 
-    await this.fetchPosts();
-    this.loadTags();
-    this.loadProfile();
+    // 并行加载文章列表、标签、名片，互不阻塞
+    await Promise.all([
+      this.fetchPosts(),
+      this.loadTags(),
+      this.loadProfile(),
+    ]);
   },
 };
 </script>
@@ -1101,9 +1104,95 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .admin-dashboard {
+    padding-top: 100px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.4em;
+  }
+
+  /* 按钮在手机上两行排布，不挤压 */
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* 表格容器横向滚动，避免挤压变形 */
+  .posts-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .posts-table {
+    min-width: 520px;
+  }
+
   .posts-table th:nth-child(4),
   .posts-table td:nth-child(4) {
     display: none;
+  }
+
+  /* Settings 对话框全屏化，方便手机操作 */
+  .settings-dialog {
+    width: 100%;
+    max-width: 100vw;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    border: none;
+  }
+
+  .section-tabs {
+    border-radius: 0;
+  }
+
+  .settings-panel {
+    padding: 16px;
+  }
+
+  .input-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .inline-hint {
+    white-space: normal;
+    font-size: 0.75em;
+  }
+
+  /* blogroll 行在手机上纵向排列 */
+  .blogroll-item {
+    flex-wrap: wrap;
+  }
+
+  .blogroll-item .form-control {
+    flex: 1 1 100%;
+  }
+
+  /* tag 编辑行 */
+  .tag-item {
+    flex-wrap: wrap;
+  }
+
+  .tag-item-preview {
+    min-width: auto;
+    flex: 1;
+  }
+
+  .tag-color-row {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+
+  /* 删除确认弹窗 */
+  .modal-dialog {
+    min-width: 0;
+    width: 90vw;
+    padding: 24px;
   }
 }
 </style>
