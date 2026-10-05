@@ -8,6 +8,9 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@fontsource-variable/mona-sans": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "bootstrap": "^5.3.7",
     "core-js": "^3.8.3",
     "dompurify": "^3.2.6",
@@ -18,12 +21,14 @@
     "markdown-it": "^14.1.1",
     "markdown-it-anchor": "^9.2.0",
     "marked": "^16.0.0",
+    "three": "^0.186.1",
     "vue": "^3.2.13",
     "vue-router": "^4.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
+    "@babel/plugin-transform-class-static-block": "^7.29.7",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-plugin-router": "~5.0.0",

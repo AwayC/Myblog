@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue';
 import PostlistView from '../views/PostlistView.vue';
 import PostView from '../views/postView.vue';
+import FriendsView from '../views/FriendsView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
 import AdminLoginView from '../views/AdminLoginView.vue';
 import AdminDashboardView from '../views/AdminDashboardView.vue';
@@ -26,6 +27,11 @@ const routes = [
     path: '/Postlist/',
     name: 'Postlist',
     component: PostlistView,
+  },
+  {
+    path: '/friends',
+    name: 'friends',
+    component: FriendsView,
   },
   {
     path: '/post/',

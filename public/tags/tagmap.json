@@ -1,10 +1,9 @@
 {
-
-    "前端": "#b8daff",
-    "JavaScript": "#eeff00", 
-    "C/C++": "#ffd8b5",
-    "嵌入式": "#c3e6cb",
-    "心得": "#f5e6cc", 
-    "Linux": "#e0e0e0", 
-    "default": "#e0e0e0"
+    "前端": "#FFB27A",
+    "JavaScript": "#F2D27C",
+    "C/C++": "#9FC3DA",
+    "嵌入式": "#A9CFA0",
+    "心得": "#C9B9EE",
+    "Linux": "#D8D1C3",
+    "default": "#CFC9BC"
 }

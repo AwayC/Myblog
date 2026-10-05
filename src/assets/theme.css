@@ -1,0 +1,136 @@
+/*
+ * AWAY — global design tokens
+ * Lando-Norris-inspired editorial dark theme with a papaya orange accent.
+ */
+:root {
+  --c-bg: #0c0c0a;
+  --c-bg-elev: #141411;
+  --c-bg-elev-2: #1b1b17;
+  --c-ink: #f2f0e9;
+  --c-ink-2: #b9b7ae;
+  --c-ink-3: #7a786f;
+  --c-line: rgba(242, 240, 233, 0.09);
+  --c-line-strong: rgba(242, 240, 233, 0.18);
+  --c-accent: #ff8000;
+  --c-accent-soft: #ffa347;
+  --c-accent-glow: rgba(255, 128, 0, 0.28);
+  --c-accent-ink: #160b00;
+
+  --f-sans: 'Mona Sans Variable', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --f-serif: 'Instrument Serif', 'Songti SC', 'STSong', Georgia, serif;
+  --f-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 22px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --nav-h: 84px;
+
+  color-scheme: dark;
+}
+
+html {
+  background-color: var(--c-bg);
+}
+
+/* body 保持透明，否则会盖住 z-index 为负的全站背景 */
+body {
+  background-color: transparent;
+  color: var(--c-ink);
+}
+
+body {
+  font-family: var(--f-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+}
+
+a {
+  color: var(--c-accent);
+}
+
+/* Shared editorial pieces used across views */
+.ui-eyebrow {
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+}
+
+.ui-display {
+  font-family: var(--f-sans);
+  font-weight: 800;
+  font-stretch: 112%;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+  color: var(--c-ink);
+}
+
+.ui-serif {
+  font-family: var(--f-serif);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0;
+}
+
+.ui-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--c-line-strong);
+  border-top-color: var(--c-accent);
+  animation: ui-spin 0.9s linear infinite;
+}
+
+@keyframes ui-spin {
+  to { transform: rotate(360deg); }
+}
+
+/*
+ * 字母滚动（RollText）
+ * 任意带 .roll-host 的元素悬停时，内部 RollText 的字母依次上滚。
+ */
+.roll {
+  display: inline-flex;
+  white-space: nowrap;
+}
+
+.roll-c {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  line-height: 1.15;
+  height: 1.15em;
+}
+
+.roll-in {
+  position: relative;
+  display: inline-block;
+  transition: transform 0.55s cubic-bezier(0.7, 0, 0.2, 1);
+  transition-delay: calc(var(--i) * 0.022s);
+}
+
+.roll-in::after {
+  content: attr(data-c);
+  position: absolute;
+  left: 0;
+  top: 100%;
+}
+
+.roll-host:hover .roll-in,
+.roll-host:focus-visible .roll-in {
+  transform: translateY(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roll-in {
+    transition: none;
+  }
+}

@@ -29,3 +29,4 @@ docs
 .claude/
 
 public/page/\n# Backend\nbackend/node_modules/\nbackend/database.db
+tmp/

@@ -2,6 +2,8 @@
     {
         "id": 1,
         "name": "ℱluorine",
-        "link": "https://lemoon1206.github.io/"
+        "link": "https://lemoon1206.github.io/",
+        "avatar": "https://lemoon1206.github.io/favicon.ico",
+        "desc": "探索技术与代码乐趣的个人博客"
     }
 ]

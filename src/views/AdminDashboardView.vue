@@ -1,13 +1,50 @@
 <template>
   <div class="admin-dashboard">
     <div class="dashboard-header">
-      <h1>Admin Dashboard</h1>
-      <div class="header-actions">
-        <span class="user-info">{{ username }}</span>
-        <button class="btn btn-new" @click="createPost">+ New Post</button>
-        <button class="btn btn-settings" @click="toggleSettings">{{ showSettings ? 'Hide Settings' : 'Settings' }}</button>
-        <button class="btn btn-logout" @click="logout">Logout</button>
+      <div class="dash-eyebrow ui-eyebrow">
+        <span class="accent">N° 00 — Pit wall</span>
+        <span class="dash-line"></span>
+        <span class="user-info"><i class="user-dot"></i>{{ username }}</span>
       </div>
+      <div class="dash-title-row">
+        <h1 class="dash-title">
+          <span class="dt-sans">Control</span>
+          <span class="dt-serif">room</span>
+        </h1>
+        <div class="header-actions">
+          <button class="btn btn-new roll-host" @click="createPost">
+            <span class="btn-plus">+</span><RollText text="New Post" />
+          </button>
+          <button class="btn btn-settings roll-host" @click="toggleSettings">
+            <RollText :key="showSettings ? 1 : 0" :text="showSettings ? 'Hide Settings' : 'Settings'" />
+          </button>
+          <button class="btn btn-logout roll-host" @click="logout"><RollText text="Logout" /></button>
+        </div>
+      </div>
+
+      <div class="dash-stats">
+        <div class="stat"><span>Posts</span><b>{{ posts.length }}</b></div>
+        <div class="stat"><span>Tags</span><b>{{ Object.keys(availableTags).length }}</b></div>
+        <div class="stat"><span>Showing</span><b>{{ filteredPosts.length }}</b></div>
+        <div class="stat"><span>With cover</span><b>{{ posts.filter(p => p.has_img).length }}</b></div>
+      </div>
+    </div>
+
+    <!-- 搜索 / 标签过滤（复用原有 filteredPosts） -->
+    <div class="search-bar">
+      <div class="search-field">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input v-model="searchQuery" class="search-input" type="text" placeholder="Search by title..." />
+      </div>
+      <div class="search-field search-field-select">
+        <select v-model="tagFilter" class="search-select">
+          <option value="">All tags</option>
+          <option v-for="(color, name) in availableTags" :key="name" :value="name">{{ name }}</option>
+        </select>
+      </div>
+      <button v-if="searchQuery || tagFilter" class="btn-clear-search" @click="clearSearch">Clear</button>
     </div>
 
     <div class="posts-table-wrapper">
@@ -15,21 +52,21 @@
         <div class="spinner"></div>
         <span>Loading posts...</span>
       </div>
-      <table class="posts-table" v-else-if="posts.length > 0">
+      <table class="posts-table" v-else-if="filteredPosts.length > 0">
         <thead>
           <tr>
-            <th>ID</th>
+            <th>N°</th>
             <th>Title</th>
             <th>Tags</th>
             <th>Date</th>
-            <th>Actions</th>
+            <th class="th-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="post in posts" :key="post.id">
-            <td>{{ post.id }}</td>
-            <td>
-              <span v-if="post.has_img">🖼 </span>
+          <tr v-for="post in filteredPosts" :key="post.id">
+            <td class="td-id">{{ String(post.id).padStart(2, '0') }}</td>
+            <td class="td-title">
+              <span v-if="post.has_img" class="img-flag" title="Has cover image">IMG</span>
               {{ post.name }}
             </td>
             <td>
@@ -38,25 +75,30 @@
                 v-for="tag in post.tags"
                 :key="tag.name"
                 :style="{
-                  backgroundColor: (tags[tag.name] || tags.default || '#e0e0e0') + '33',
+                  backgroundColor: (tags[tag.name] || tags.default || '#e0e0e0') + '26',
                   color: tags[tag.name] || tags.default || '#e0e0e0'
                 }"
               >{{ tag.name }}</span>
             </td>
-            <td>{{ post.time }}</td>
+            <td class="td-date">{{ post.time }}</td>
             <td class="actions">
-              <button class="btn btn-sm btn-edit" @click="editPost(post.id)">Edit</button>
-              <button class="btn btn-sm btn-delete" @click="confirmDelete(post)">Delete</button>
+              <button class="btn btn-sm btn-edit roll-host" @click="editPost(post.id)"><RollText text="Edit" /></button>
+              <button class="btn btn-sm btn-delete roll-host" @click="confirmDelete(post)"><RollText text="Delete" /></button>
             </td>
           </tr>
         </tbody>
       </table>
+      <div v-else-if="posts.length > 0" class="empty-state">没有匹配的文章 — try another search.</div>
       <div v-else class="empty-state">No posts yet. Click "+ New Post" to create one.</div>
     </div>
 
     <!-- Settings dialog -->
     <div v-if="showSettings" class="settings-overlay" @click.self="showSettings = false">
       <div class="settings-dialog">
+        <div class="settings-head">
+          <h2 class="settings-title"><span class="dt-sans">Settings</span></h2>
+          <button class="tab-btn tab-close" @click="showSettings = false">✕</button>
+        </div>
         <div class="section-tabs">
           <button
             class="tab-btn"
@@ -73,7 +115,6 @@
             :class="{ active: settingsTab === 'tags' }"
             @click="switchSettingsTab('tags')"
           >Tags</button>
-          <button class="tab-btn tab-close" @click="showSettings = false">✕</button>
         </div>
 
         <!-- Profile settings -->
@@ -106,8 +147,8 @@
             <label>Bilibili Display Text</label>
             <input v-model="profile.bilibili.text" type="text" class="form-control" placeholder="Away真的逊了" />
           </div>
-          <button class="btn btn-save-settings" @click="saveProfile" :disabled="savingProfile">
-            {{ savingProfile ? 'Saving...' : 'Save Profile' }}
+          <button class="btn btn-save-settings roll-host" @click="saveProfile" :disabled="savingProfile">
+            <RollText :key="savingProfile ? 1 : 0" :text="savingProfile ? 'Saving...' : 'Save Profile'" />
           </button>
           <span v-if="profileMsg" class="save-msg">{{ profileMsg }}</span>
           </template>
@@ -122,16 +163,19 @@
           <template v-else>
           <div class="blogroll-list">
             <div v-for="(b, i) in blogroll" :key="i" class="blogroll-item">
+              <span class="row-num">{{ String(i + 1).padStart(2, '0') }}</span>
               <input v-model="b.name" class="form-control" placeholder="Name" />
               <input v-model="b.link" class="form-control" placeholder="https://..." />
               <button class="btn btn-delete-sm" @click="removeBlogroll(i)">✕</button>
             </div>
           </div>
-          <button class="btn btn-add-sm" @click="addBlogroll">+ Add</button>
-          <button class="btn btn-save-settings" @click="saveBlogroll" :disabled="savingBlogroll" style="margin-left: 12px;">
-            {{ savingBlogroll ? 'Saving...' : 'Save Blogroll' }}
-          </button>
-          <span v-if="blogrollMsg" class="save-msg">{{ blogrollMsg }}</span>
+          <div class="panel-actions">
+            <button class="btn btn-add-sm" @click="addBlogroll">+ Add</button>
+            <button class="btn btn-save-settings roll-host" @click="saveBlogroll" :disabled="savingBlogroll">
+              <RollText :key="savingBlogroll ? 1 : 0" :text="savingBlogroll ? 'Saving...' : 'Save Blogroll'" />
+            </button>
+            <span v-if="blogrollMsg" class="save-msg">{{ blogrollMsg }}</span>
+          </div>
           </template>
         </div>
 
@@ -145,7 +189,7 @@
           <div class="tags-list">
             <div v-for="(color, name) in editableTags" :key="name" class="tag-item">
               <div class="tag-item-preview">
-                <span class="tag-pill tag-pill-editable" :style="{ backgroundColor: color + '33', color: color }">{{ name }}</span>
+                <span class="tag-pill tag-pill-editable" :style="{ backgroundColor: color }">{{ name }}</span>
               </div>
               <div class="tag-color-row">
                 <input type="color" v-model="editableTags[name]" class="color-picker" />
@@ -168,8 +212,8 @@
             <input type="color" v-model="newTagColor" class="color-picker" />
             <button class="btn btn-add-sm" @click="addTag" :disabled="!newTagName.trim()">+ Add</button>
           </div>
-          <button class="btn btn-save-settings" @click="saveTags" :disabled="savingTags">
-            {{ savingTags ? 'Saving...' : 'Save Tags' }}
+          <button class="btn btn-save-settings roll-host" @click="saveTags" :disabled="savingTags">
+            <RollText :key="savingTags ? 1 : 0" :text="savingTags ? 'Saving...' : 'Save Tags'" />
           </button>
           <span v-if="tagsMsg" class="save-msg">{{ tagsMsg }}</span>
           </template>
@@ -180,6 +224,7 @@
     <!-- Delete confirm modal -->
     <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
       <div class="modal-dialog">
+        <span class="ui-eyebrow modal-eyebrow">Red flag</span>
         <h3>Confirm Delete</h3>
         <p>Are you sure you want to delete <strong>"{{ deleteTarget.name }}"</strong>?</p>
         <p class="text-warning">This cannot be undone.</p>
@@ -231,7 +276,7 @@ export default {
       tags: {},
       editableTags: {},
       newTagName: '',
-      newTagColor: '#5abbc6',
+      newTagColor: '#FFB27A',
       savingTags: false,
       tagsMsg: '',
     };
@@ -509,113 +554,287 @@ export default {
 
 <style scoped>
 .admin-dashboard {
-  padding-top: 80px;
-  min-height: 100vh;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding-left: 20px;
-  padding-right: 20px;
   position: relative;
   z-index: 1;
+  max-width: 1320px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: calc(var(--nav-h) + 24px) 28px 40px;
 }
 
-.dashboard-header {
+.accent {
+  color: var(--c-accent);
+}
+
+/* ---------- 头部 ---------- */
+.dash-eyebrow {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-  gap: 15px;
+  align-items: center;
+  gap: 14px;
 }
 
-.dashboard-header h1 {
-  color: #9cc5e2;
-  font-family: 'Orbitron', sans-serif;
+.dash-line {
+  flex: 1;
+  height: 1px;
+  background: var(--c-line-strong);
+}
+
+.user-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--c-ink-2);
+}
+
+.user-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  box-shadow: 0 0 10px var(--c-accent);
+}
+
+.dash-title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin: 22px 0 36px;
+}
+
+.dash-title {
   margin: 0;
-  margin-right: auto;
+  font-size: clamp(3.4rem, 9vw, 8.4rem);
+  line-height: 0.82;
+  color: var(--c-ink);
+}
+
+.dt-sans {
+  font-family: var(--f-sans);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.035em;
+}
+
+.dt-serif {
+  font-family: var(--f-serif);
+  font-style: italic;
+  color: var(--c-accent);
+  margin-left: 0.15em;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.user-info {
-  color: #888;
-  margin-right: 4px;
-  font-size: 0.85em;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
 }
 
 .btn-new {
-  background-color: #5abbc6;
-  color: #1a1a1a;
-  font-weight: 600;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 0.85em;
-  transition: all 0.3s;
+  background: var(--c-accent);
+  border: 1px solid var(--c-accent);
+  color: var(--c-accent-ink);
+}
+
+.btn-plus {
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .btn-new:hover {
-  background-color: #4aa8b3;
+  background: var(--c-accent-soft);
+  color: var(--c-accent-ink);
+  box-shadow: 0 12px 36px var(--c-accent-glow);
 }
 
-.btn-settings {
-  background-color: transparent;
-  color: #888;
-  border: 1px solid #555;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 0.85em;
-  transition: all 0.3s;
+.btn-settings,
+.btn-logout {
+  background: rgba(17, 17, 14, 0.8);
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-ink);
 }
 
 .btn-settings:hover {
-  color: #5abbc6;
-  border-color: #5abbc6;
-}
-
-.btn-logout {
-  background-color: transparent;
-  color: #888;
-  border: 1px solid #555;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 0.85em;
-  transition: all 0.3s;
+  border-color: var(--c-ink);
+  color: var(--c-ink);
 }
 
 .btn-logout:hover {
-  color: #f85149;
-  border-color: #f85149;
+  border-color: #ff5a4f;
+  color: #ff8a80;
 }
 
+/* 数据格 */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--c-line-strong);
+  border-bottom: 1px solid var(--c-line-strong);
+  margin-bottom: 34px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 96px;
+  padding: 14px 18px;
+  border-left: 1px solid var(--c-line);
+}
+
+.stat:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.stat span {
+  font-family: var(--f-sans);
+  font-weight: 700;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+}
+
+.stat b {
+  font-family: var(--f-sans);
+  font-weight: 800;
+  font-size: clamp(1.8rem, 3.4vw, 3rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 搜索 ---------- */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.search-field {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-field-select {
+  flex: 0 0 200px;
+  min-width: 160px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--c-ink-3);
+  pointer-events: none;
+}
+
+.search-input,
+.search-select {
+  width: 100%;
+  height: 48px;
+  background-color: rgba(17, 17, 14, 0.85);
+  border: 1px solid var(--c-line-strong);
+  border-radius: 10px;
+  color: var(--c-ink);
+  font-size: 0.92rem;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.search-input {
+  padding: 0 14px 0 40px;
+}
+
+.search-input::placeholder {
+  color: var(--c-ink-3);
+}
+
+.search-select {
+  padding: 0 34px 0 14px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ff8000' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.search-input:focus,
+.search-select:focus {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 4px rgba(255, 128, 0, 0.12);
+}
+
+.search-select option {
+  background-color: #141411;
+  color: var(--c-ink);
+}
+
+.btn-clear-search {
+  height: 48px;
+  padding: 0 16px;
+  background: transparent;
+  color: var(--c-ink-2);
+  border: 1px solid var(--c-line-strong);
+  border-radius: 10px;
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-clear-search:hover {
+  color: var(--c-accent);
+  border-color: var(--c-accent);
+}
+
+/* ---------- 表格（像 F1 成绩表） ---------- */
 .posts-table-wrapper {
-  background-color: rgba(37, 45, 56, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  overflow: hidden;
+  border-top: 1px solid var(--c-line-strong);
 }
 
 .loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 40px 0;
-  color: #888;
-  font-size: 0.9em;
-  gap: 12px;
+  gap: 14px;
+  padding: 50px 0;
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
 }
 
 .loading-state .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(90, 187, 198, 0.2);
-  border-top-color: #5abbc6;
+  border: 2px solid var(--c-line-strong);
+  border-top-color: var(--c-accent);
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
 }
@@ -630,198 +849,340 @@ export default {
 }
 
 .posts-table th {
-  color: #9cc5e2;
+  padding: 14px 12px;
+  font-family: var(--f-sans);
+  font-weight: 700;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
   text-align: left;
-  padding: 14px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.9em;
+  border-bottom: 1px solid var(--c-line-strong);
+}
+
+.posts-table th:first-child,
+.posts-table td:first-child {
+  padding-left: 0;
+}
+
+.th-actions {
+  text-align: right !important;
 }
 
 .posts-table td {
-  padding: 12px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  color: #cacaca;
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--c-line);
+  color: var(--c-ink-2);
+  vertical-align: middle;
+  transition: background 0.25s;
 }
 
 .posts-table tr:hover td {
-  background-color: rgba(90, 187, 198, 0.05);
+  background: rgba(255, 128, 0, 0.035);
+}
+
+.td-id {
+  width: 70px;
+  font-family: var(--f-sans);
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+  color: var(--c-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.posts-table tr:hover .td-id {
+  color: var(--c-accent);
+}
+
+.td-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--c-ink);
+}
+
+.img-flag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 5px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 4px;
+  font-family: var(--f-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  color: var(--c-accent);
+  vertical-align: 2px;
+}
+
+.td-date {
+  font-family: var(--f-mono);
+  font-size: 0.74rem;
+  white-space: nowrap;
+  color: var(--c-ink-3);
 }
 
 .tag-pill {
   display: inline-block;
-  background-color: rgba(90, 187, 198, 0.2);
-  color: #5abbc6;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.8em;
-  margin-right: 4px;
+  margin: 2px 4px 2px 0;
+  padding: 4px 8px 3px;
+  border-radius: 4px;
+  font-family: var(--f-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .actions {
   white-space: nowrap;
+  text-align: right;
 }
 
 .btn-sm {
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 0.85em;
-  border: none;
-  cursor: pointer;
-  margin-right: 6px;
-  transition: all 0.2s;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 0.7rem;
+  border-radius: 8px;
 }
 
 .btn-edit {
-  background-color: rgba(90, 187, 198, 0.2);
-  color: #5abbc6;
+  margin-right: 6px;
+  background: transparent;
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-ink);
 }
 
 .btn-edit:hover {
-  background-color: rgba(90, 187, 198, 0.4);
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
 .btn-delete {
-  background-color: rgba(248, 81, 73, 0.15);
-  color: #f85149;
+  background: transparent;
+  border: 1px solid var(--c-line);
+  color: var(--c-ink-3);
 }
 
 .btn-delete:hover {
-  background-color: rgba(248, 81, 73, 0.35);
+  border-color: #ff5a4f;
+  color: #ff8a80;
 }
 
 .empty-state {
-  padding: 60px;
+  padding: 60px 0;
   text-align: center;
-  color: #888;
+  color: var(--c-ink-3);
 }
 
-/* Modal */
-.modal-overlay {
+/* ---------- 弹窗共用 ---------- */
+.modal-overlay,
+.settings-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1500;
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1000;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(8, 8, 6, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: overlay-in 0.3s ease;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
 }
 
 .modal-dialog {
-  background-color: #1e2430;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 30px;
-  min-width: 380px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --cut: 22px;
+  position: relative;
+  isolation: isolate;
+  width: min(460px, 92vw);
+  max-width: none;
+  margin: 0;
+  /* bootstrap 的 .modal-dialog 默认 pointer-events: none */
+  pointer-events: auto;
+  padding: 26px 28px;
+  animation: dialog-in 0.45s var(--ease-out);
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(20px); }
+}
+
+.modal-dialog::before,
+.modal-dialog::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.modal-dialog::before {
+  background: #ff5a4f;
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
+}
+
+.modal-dialog::after {
+  background: #141411;
+  clip-path: polygon(1px 1px, calc(100% - var(--cut) - 0.4px) 1px, calc(100% - 1px) calc(var(--cut) + 0.4px), calc(100% - 1px) calc(100% - 1px), 1px calc(100% - 1px));
+}
+
+.modal-eyebrow {
+  color: #ff8a80;
 }
 
 .modal-dialog h3 {
-  color: #f85149;
-  margin-bottom: 15px;
-}
-
-.text-warning {
-  color: #f0883e;
+  margin: 8px 0 14px;
+  font-family: var(--f-sans);
+  font-weight: 800;
+  font-size: 1.8rem;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--c-ink);
 }
 
 .modal-dialog p {
-  color: #cacaca;
   margin-bottom: 8px;
+  color: var(--c-ink-2);
+}
+
+.modal-dialog strong {
+  color: var(--c-ink);
+}
+
+.text-warning {
+  color: #ff8a80 !important;
+  font-size: 0.86rem;
 }
 
 .modal-actions {
   display: flex;
-  gap: 12px;
   justify-content: flex-end;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: 22px;
 }
 
 .btn-cancel {
-  background-color: transparent;
-  color: #888;
-  border: 1px solid #555;
-  padding: 8px 20px;
-  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-ink);
+}
+
+.btn-cancel:hover {
+  border-color: var(--c-ink);
+  color: var(--c-ink);
 }
 
 .btn-delete-confirm {
-  background-color: #f85149;
-  color: white;
-  border: none;
-  padding: 8px 20px;
-  border-radius: 8px;
+  background: #ff5a4f;
+  border: 1px solid #ff5a4f;
+  color: #1a0503;
+}
+
+.btn-delete-confirm:hover {
+  background: #ff7a70;
+  color: #1a0503;
 }
 
 .btn-delete-confirm:disabled {
   opacity: 0.5;
 }
 
-/* Settings dialog overlay */
-.settings-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
+/* ---------- 设置面板 ---------- */
+.settings-dialog {
+  width: min(680px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: #121210;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 16px;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+  animation: dialog-in 0.45s var(--ease-out);
 }
 
-.settings-dialog {
-  background-color: rgba(30, 36, 48, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  width: 560px;
-  max-width: 90vw;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px 4px;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 2.2rem;
+  line-height: 1;
+  color: var(--c-ink);
 }
 
 .section-tabs {
   display: flex;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  position: sticky;
-  top: 0;
-  background-color: rgba(30, 36, 48, 0.98);
-  border-radius: 16px 16px 0 0;
-  z-index: 1;
+  gap: 4px;
+  padding: 14px 24px 0;
+  border-bottom: 1px solid var(--c-line-strong);
 }
 
 .tab-btn {
-  flex: 1;
+  position: relative;
+  padding: 10px 14px 12px;
   background: transparent;
-  border: none;
-  color: #888;
-  padding: 12px 20px;
+  border: 0;
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
   cursor: pointer;
-  font-size: 0.95em;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
+  transition: color 0.25s;
+}
+
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--c-accent);
+  transform: scaleX(0);
+  transition: transform 0.35s var(--ease-out);
+}
+
+.tab-btn:hover {
+  color: var(--c-ink);
 }
 
 .tab-btn.active {
-  color: #5abbc6;
-  border-bottom-color: #5abbc6;
+  color: var(--c-accent);
 }
 
-.tab-btn:hover { color: #cacaca; }
+.tab-btn.active::after {
+  transform: scaleX(1);
+}
 
 .tab-close {
-  flex: 0 0 auto;
-  padding: 12px 16px;
-  color: #888;
-  font-size: 1em;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 10px;
+  color: var(--c-ink);
+  font-family: var(--f-sans);
+  font-size: 0.9rem;
+}
+
+.tab-close::after {
+  display: none;
 }
 
 .tab-close:hover {
-  color: #f85149;
+  background: var(--c-ink);
+  color: var(--c-accent-ink);
 }
 
 .settings-panel {
-  padding: 24px;
+  padding: 22px 24px 26px;
 }
 
 .settings-panel .form-group {
@@ -830,63 +1191,96 @@ export default {
 
 .settings-panel .form-group label {
   display: block;
-  color: #9cc5e2;
-  font-size: 0.9em;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-family: var(--f-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
 }
 
-.settings-panel .form-control {
-  width: 100%;
-  background-color: rgba(24, 28, 39, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #e0e0e0;
-  padding: 10px 12px;
-  border-radius: 8px;
+.settings-panel .form-control,
+.add-tag-row .form-control,
+.blogroll-item .form-control {
+  min-height: 44px;
+  background-color: #0d0d0b;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 10px;
+  color: var(--c-ink);
+  font-size: 0.92rem;
+}
+
+.settings-panel .form-control::placeholder {
+  color: var(--c-ink-3);
+}
+
+.settings-panel .form-control:focus {
+  background-color: #0d0d0b;
+  border-color: var(--c-accent);
+  color: var(--c-ink);
+  box-shadow: 0 0 0 4px rgba(255, 128, 0, 0.12);
 }
 
 .input-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .inline-hint {
-  color: #666;
-  font-size: 0.8em;
+  font-family: var(--f-mono);
+  font-size: 0.66rem;
+  color: var(--c-ink-3);
   white-space: nowrap;
 }
 
 .btn-save-settings {
-  background-color: #5abbc6;
-  color: #1a1a1a;
-  font-weight: 600;
-  border: none;
-  padding: 10px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 8px;
+  background: var(--c-accent);
+  border: 1px solid var(--c-accent);
+  color: var(--c-accent-ink);
 }
 
-.btn-save-settings:hover { background-color: #4aa8b3; }
-.btn-save-settings:disabled { opacity: 0.5; }
+.btn-save-settings:hover {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-ink);
+}
+
+.btn-save-settings:disabled {
+  opacity: 0.5;
+}
 
 .save-msg {
   margin-left: 12px;
-  color: #3fb950;
-  font-size: 0.9em;
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  color: var(--c-accent);
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .blogroll-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .blogroll-item {
   display: flex;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
+}
+
+.row-num {
+  width: 26px;
+  flex-shrink: 0;
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  color: var(--c-ink-3);
 }
 
 .blogroll-item .form-control {
@@ -894,170 +1288,78 @@ export default {
 }
 
 .btn-delete-sm {
-  background: rgba(248, 81, 73, 0.15);
-  color: #f85149;
-  border: none;
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-  font-size: 12px;
-  display: inline-flex;
-  justify-content: center; /* 水平居中 */
-  align-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-ink-3);
+  border-radius: 10px;
 }
 
-.btn-delete-sm:hover { background: rgba(248, 81, 73, 0.35); }
+.btn-delete-sm:hover {
+  border-color: #ff5a4f;
+  color: #ff8a80;
+}
 
 .btn-add-sm {
-  background-color: rgba(90, 187, 198, 0.15);
-  color: #5abbc6;
-  border: 1px dashed rgba(90, 187, 198, 0.3);
-  border-radius: 8px;
-  padding: 6px 16px;
-  cursor: pointer;
-  font-size: 0.85em;
-}
-
-.btn-add-sm:hover { background-color: rgba(90, 187, 198, 0.3); }
-
-/* ---- Search Bar ---- */
-.search-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.search-field {
-  position: relative;
-  flex: 1;
-  min-width: 180px;
-  max-width: 320px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #666;
-  pointer-events: none;
-}
-
-.search-input {
-  width: 100%;
-  background-color: rgba(37, 45, 56, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e0e0e0;
-  padding: 10px 14px 10px 36px;
-  border-radius: 10px;
-  font-size: 0.9em;
-  transition: border-color 0.2s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #5abbc6;
-  box-shadow: 0 0 0 0.15rem rgba(90, 187, 198, 0.15);
-}
-
-.search-input::placeholder {
-  color: #666;
-}
-
-.search-select {
-  width: 100%;
-  background-color: rgba(37, 45, 56, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #cacaca;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 0.9em;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
-}
-
-.search-select:focus {
-  outline: none;
-  border-color: #5abbc6;
-  box-shadow: 0 0 0 0.15rem rgba(90, 187, 198, 0.15);
-}
-
-.search-select option {
-  background-color: #1e2430;
-  color: #cacaca;
-}
-
-.btn-clear-search {
   background: transparent;
-  color: #888;
-  border: 1px solid #555;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.85em;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
+  border: 1px dashed var(--c-ink-3);
+  color: var(--c-ink);
 }
 
-.btn-clear-search:hover {
-  color: #f85149;
-  border-color: #f85149;
+.btn-add-sm:hover {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
 }
 
-/* ---- Tags Settings Panel ---- */
+.btn-add-sm:disabled {
+  opacity: 0.4;
+}
+
+/* 标签管理 */
 .tags-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   margin-bottom: 16px;
 }
 
 .tag-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background-color: rgba(24, 28, 39, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--c-line);
 }
 
 .tag-item-preview {
-  min-width: 80px;
+  min-width: 140px;
 }
 
 .tag-pill-editable {
-  pointer-events: none;
-  font-size: 0.8em;
-  padding: 3px 10px;
-  border-radius: 12px;
+  color: #161511;
+  padding: 6px 10px 5px;
+  font-size: 0.7rem;
 }
 
 .tag-color-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
+  margin-left: auto;
 }
 
 .color-picker {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  background: transparent;
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+  background: #0d0d0b;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 10px;
   cursor: pointer;
-  padding: 2px;
 }
 
 .color-picker::-webkit-color-swatch-wrapper {
@@ -1065,38 +1367,40 @@ export default {
 }
 
 .color-picker::-webkit-color-swatch {
-  border: none;
-  border-radius: 4px;
+  border: 0;
+  border-radius: 7px;
 }
 
 .color-hex-input {
-  width: 90px;
-  background-color: rgba(24, 28, 39, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #e0e0e0;
-  padding: 6px 8px;
-  border-radius: 6px;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.85em;
+  width: 100px;
+  height: 40px;
+  padding: 0 10px;
+  background: #0d0d0b;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 10px;
+  color: var(--c-ink);
+  font-family: var(--f-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
 }
 
 .color-hex-input:focus {
   outline: none;
-  border-color: #5abbc6;
+  border-color: var(--c-accent);
 }
 
 .empty-tags-hint {
-  color: #555;
+  padding: 18px 0;
   text-align: center;
-  padding: 16px;
-  font-size: 0.85em;
+  color: var(--c-ink-3);
+  font-size: 0.86rem;
 }
 
 .add-tag-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .add-tag-row .form-control {
@@ -1105,19 +1409,28 @@ export default {
 
 @media (max-width: 768px) {
   .admin-dashboard {
-    padding-top: 100px;
-    padding-left: 12px;
-    padding-right: 12px;
+    padding: calc(var(--nav-h) + 10px) 16px 32px;
   }
 
-  .dashboard-header h1 {
-    font-size: 1.4em;
-  }
-
-  /* 按钮在手机上两行排布，不挤压 */
   .header-actions {
     flex-wrap: wrap;
-    gap: 8px;
+  }
+
+  .dash-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat:nth-child(3) {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .stat:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--c-line);
+  }
+
+  .search-field-select {
+    flex: 1 1 100%;
   }
 
   /* 表格容器横向滚动，避免挤压变形 */
@@ -1127,7 +1440,7 @@ export default {
   }
 
   .posts-table {
-    min-width: 520px;
+    min-width: 560px;
   }
 
   .posts-table th:nth-child(4),
@@ -1136,17 +1449,16 @@ export default {
   }
 
   /* Settings 对话框全屏化，方便手机操作 */
+  .settings-overlay {
+    padding: 0;
+  }
+
   .settings-dialog {
     width: 100%;
-    max-width: 100vw;
     max-height: 100vh;
     height: 100vh;
     border-radius: 0;
     border: none;
-  }
-
-  .section-tabs {
-    border-radius: 0;
   }
 
   .settings-panel {
@@ -1161,10 +1473,8 @@ export default {
 
   .inline-hint {
     white-space: normal;
-    font-size: 0.75em;
   }
 
-  /* blogroll 行在手机上纵向排列 */
   .blogroll-item {
     flex-wrap: wrap;
   }
@@ -1173,26 +1483,13 @@ export default {
     flex: 1 1 100%;
   }
 
-  /* tag 编辑行 */
   .tag-item {
     flex-wrap: wrap;
-  }
-
-  .tag-item-preview {
-    min-width: auto;
-    flex: 1;
   }
 
   .tag-color-row {
     flex: 1 1 100%;
     justify-content: flex-end;
-  }
-
-  /* 删除确认弹窗 */
-  .modal-dialog {
-    min-width: 0;
-    width: 90vw;
-    padding: 24px;
   }
 }
 </style>

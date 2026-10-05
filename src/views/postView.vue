@@ -1,80 +1,146 @@
 <template>
-  <div class="post-view" v-if="post">
-    <div class="head-margin"></div>
-    <div class="header-container">
-      <div class="title">
-        <typeWord>
-          <h1>
-            {{ post.name }}
-          </h1>
-        </typeWord>
-      </div>
-      <div class="date">
-        <span class="calender">
-          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="24" height="24" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z"></path>
-              <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4"></path>
-              <circle cx="18" cy="18" r="4"></circle>
-              <path d="M15 3v4"></path>
-              <path d="M7 3v4"></path>
-              <path d="M3 11h16"></path>
-              <path d="M18 16.496v1.504l1 1"></path>
-              </svg>
-        </span>
-        <span class="time">{{ post.time }}</span>
-        <span class="views ms-4">
-          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-eye" width="22" height="22" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <circle cx="12" cy="12" r="2" />
-            <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" />
-          </svg>
-          <span class="ms-1">{{ views }} views</span>
-        </span>
-      </div>
-      <div class='tags'>
-        <tagBase v-for='tag in post.tags' :key="tag.name" :style="{backgroundColor: getTagColor(tag)}">
-          {{tag.name}}
-        </tagBase>
-
-      </div>
+  <div class="post-page">
+    <!-- 阅读进度 -->
+    <div class="read-progress" aria-hidden="true">
+      <i :style="{ transform: `scaleX(${readProgress})` }"></i>
     </div>
 
-    <div class="main-content-layout">
-      <div class="content-wrapper card">
-        <div class="markdown-body" v-html="safeContent"></div>
-        <div class="content-end">
-          <hr>
+    <div class="post-view" v-if="post">
+      <!-- ============ HERO ============ -->
+      <header class="header-container">
+        <div class="post-eyebrow">
+          <router-link to="/Postlist" class="back-link roll-host">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+            <RollText text="Journal" />
+          </router-link>
+          <span class="post-eyebrow-line"></span>
+          <span class="post-eyebrow-num">N° {{ String(post.id).padStart(2, '0') }}</span>
         </div>
-      </div>
 
-      <aside class="toc-sidebar" v-if="headings.length > 0">
-        <h3>内容导航</h3>
-        <ul>
-          <li v-for="heading in headings" :key="heading.id" 
-              :class="{ 'active': activeHeadingId === heading.id, [`level-${heading.level}`]: true }">
-            <a :href="`#${heading.id}`" @click.prevent="scrollToHeading(heading.id)">
-              {{ heading.text }}
-            </a>
-          </li>
-        </ul>
-      </aside>
-    </div>
+        <div class="title">
+          <typeWord>
+            <h1>
+              {{ post.name }}
+            </h1>
+          </typeWord>
+        </div>
 
-    <div class="page-link row">
-      <div class="col-5 pre-page" v-if="prevPost">
-          <div class="card" @click="goToPost(prevPost.id)">
-              <span class="arrow">←</span>
-              <div class="page-label">上一篇</div>
-              <div class="page-title">{{ prevPost.name }}</div>
+        <p v-if="post.summary" class="post-lead">
+          <span class="ui-serif">“</span>{{ post.summary }}<span class="ui-serif">”</span>
+        </p>
+
+        <!-- 像原站 On Track 页的数据格 -->
+        <div class="post-cells">
+          <div class="cell">
+            <span class="cell-label">Published</span>
+            <span class="cell-value">{{ post.time }}</span>
           </div>
-      </div>
-      <div class="col-5 next-page" v-if="nextPost">
-        <div class="card" @click="goToPost(nextPost.id)">
-            <div class="page-label">下一篇</div>
-            <div class="page-title">{{ nextPost.name }}</div>
-            <span class="arrow">→</span>
+          <div class="cell">
+            <span class="cell-label">Reading</span>
+            <span class="cell-value">{{ readingMinutes }}<small>min</small></span>
+          </div>
+          <div class="cell">
+            <span class="cell-label">Words</span>
+            <span class="cell-value">{{ wordCount }}</span>
+          </div>
+          <div class="cell views">
+            <span class="cell-label">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-eye" width="13" height="13" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <circle cx="12" cy="12" r="2" />
+                <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" />
+              </svg>
+              Views
+            </span>
+            <span class="cell-value">{{ views }}</span>
+          </div>
+          <div class="cell cell-tags">
+            <span class="cell-label">Tags</span>
+            <div class='tags'>
+              <tagBase v-for='tag in post.tags' :key="tag.name" :style="{backgroundColor: getTagColor(tag)}">
+                {{tag.name}}
+              </tagBase>
+            </div>
+          </div>
         </div>
+
+        <figure v-if="coverSrc" class="post-cover">
+          <img :src="coverSrc" :alt="post.name">
+          <figcaption>
+            <span>Cover</span>
+            <span>{{ postYear }}</span>
+          </figcaption>
+        </figure>
+      </header>
+
+      <!-- ============ 正文 ============ -->
+      <div class="main-content-layout">
+        <aside class="post-rail">
+          <div class="rail-mark">
+            <span class="rail-num">{{ String(post.id).padStart(2, '0') }}</span>
+            <span class="rail-year">{{ postYear }}</span>
+          </div>
+          <div class="rail-progress">
+            <span class="ui-eyebrow">Progress</span>
+            <span class="rail-pct">{{ Math.round(readProgress * 100) }}<small>%</small></span>
+          </div>
+        </aside>
+
+        <article class="content-wrapper">
+          <div class="markdown-body" v-html="safeContent"></div>
+          <div class="content-end">
+            <span class="end-mark"></span>
+            <span class="ui-eyebrow">End of transmission</span>
+            <span class="end-mark"></span>
+          </div>
+        </article>
+
+        <aside class="toc-sidebar" v-if="headings.length > 0">
+          <h3><span>内容导航</span><span class="toc-en">Contents</span></h3>
+          <ul>
+            <li v-for="heading in headings" :key="heading.id"
+                :class="{ 'active': activeHeadingId === heading.id, [`level-${heading.level}`]: true }">
+              <a :href="`#${heading.id}`" @click.prevent="scrollToHeading(heading.id)">
+                {{ heading.text }}
+              </a>
+            </li>
+          </ul>
+        </aside>
       </div>
+
+      <!-- ============ 结尾 ============ -->
+      <section class="post-outro">
+        <h2 class="outro-statement">
+          <span class="o-sans">Thanks for</span>
+          <span class="o-serif">reading</span><span class="o-sans">.</span>
+        </h2>
+
+        <div class="post-nav">
+          <div class="pre-page" v-if="prevPost">
+            <div class="card" @click="goToPost(prevPost.id)">
+              <span class="arrow">←</span>
+              <div class="page-label">上一篇 / Previous</div>
+              <div class="page-title">{{ prevPost.name }}</div>
+            </div>
+          </div>
+          <div class="next-page" v-if="nextPost">
+            <div class="card" @click="goToPost(nextPost.id)">
+              <div class="page-label">下一篇 / Next</div>
+              <div class="page-title">{{ nextPost.name }}</div>
+              <span class="arrow">→</span>
+            </div>
+          </div>
+        </div>
+
+        <router-link to="/Postlist" class="outro-back roll-host">
+          <RollText text="All posts" />
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8" /></svg>
+        </router-link>
+      </section>
+    </div>
+
+    <div v-else class="post-loading">
+      <div class="ui-spinner"></div>
     </div>
   </div>
 </template>
@@ -104,9 +170,28 @@ export default {
           nextPost: null,
           scrollTimer: null, 
           views: 0,
+          readProgress: 0,
         }
     },
     computed: {
+      // ---- 以下只用于页面展示，不改变任何数据 ----
+      wordCount() {
+        const text = (this.postContent || '').replace(/```[\s\S]*?```/g, ' ').replace(/[#>*`_\-[\]()!|]/g, ' ');
+        const cjk = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+        const latin = (text.replace(/[\u4e00-\u9fff]/g, ' ').match(/[A-Za-z0-9]+/g) || []).length;
+        return cjk + latin;
+      },
+      readingMinutes() {
+        return Math.max(1, Math.round(this.wordCount / 350));
+      },
+      coverSrc() {
+        if (!this.post || !this.post.has_img || !this.post.img || this.post.has_img === 'False') return '';
+        return String(this.post.img).replace(/^@\/posts\//, '/posts/');
+      },
+      postYear() {
+        const m = String((this.post && this.post.time) || '').match(/\d{4}/);
+        return m ? m[0] : '';
+      },
       safeContent() {
             if (this.$markdown) {
                 let html = this.$markdown.render(this.postContent || '');
@@ -118,6 +203,10 @@ export default {
       },
     },
     methods: {
+      onProgressScroll() {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        this.readProgress = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      },
       goToPost(postId) {
         console.log("Navigating to post:", postId);
         router.push({ name: 'post', params: {id: postId} });
@@ -161,7 +250,7 @@ export default {
             const heading = this.headings[i];
             const element = document.getElementById(heading.id);
             
-            if (element && element.offsetTop <= scrollY) {
+            if (element && element.getBoundingClientRect().top + window.scrollY <= scrollY) {
                 currentId = heading.id;
                 break; 
             }
@@ -182,13 +271,13 @@ export default {
       scrollToHeading(id) {
         const element = document.getElementById(id);
         if (element) {
-          let offset = 385; 
+          const offset = 110; // 固定导航的高度
           
           this.isScrolling += 1; 
           this.activeHeadingId = id; 
 
           window.scrollTo({
-            top: element.offsetTop + offset,
+            top: element.getBoundingClientRect().top + window.scrollY - offset,
             behavior: 'smooth',
           });
           
@@ -302,6 +391,16 @@ export default {
                 });
             });
             pre.appendChild(btn);
+
+            // 代码块左上角标出语言
+            const code = pre.querySelector('code');
+            const lang = code && (code.className.match(/language-([\w+#-]+)/) || [])[1];
+            if (lang && !pre.querySelector('.code-lang')) {
+                const label = document.createElement('span');
+                label.className = 'code-lang';
+                label.textContent = lang;
+                pre.appendChild(label);
+            }
         });
 
         const alertIcons = {
@@ -349,9 +448,11 @@ export default {
     async mounted() {
       console.log('PostView mounted for ID:', this.$route.params.id);
       window.addEventListener('scroll', this.handleScroll, { passive: true });
+      window.addEventListener('scroll', this.onProgressScroll, { passive: true });
     },
     beforeUnmount() {
       window.removeEventListener('scroll', this.handleScroll);
+      window.removeEventListener('scroll', this.onProgressScroll);
       
       const contentContainer = this.$el.querySelector('.markdown-body');
       if (contentContainer && this._anchorClickHandler) {
@@ -361,243 +462,507 @@ export default {
 }
 </script>
 
+
 <style scoped>
-
-.page-link {
-  height: 100px; 
-  display: flex; 
-  margin: 0 auto;
-  width: 90%; 
-  max-width: 1200px; 
-  justify-content: space-between; 
+.post-page {
+  min-height: 100vh;
 }
 
-.pre-page {
-  height: 100%; 
-  padding: 0; 
+.post-loading {
   display: flex;
-  width: 48%; 
-  margin-right: auto; 
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
 }
 
-.next-page {  
-  height: 100%; 
-  padding: 0; 
-  display: flex; 
-  width: 48%; 
-  margin-left: auto; 
+/* ---------- 阅读进度 ---------- */
+.read-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 1000;
+  pointer-events: none;
 }
 
-/* 底部上一篇/下一篇卡片增加毛玻璃背景 */
-.next-page .card,
-.pre-page .card {
-    position: relative;
-    height: 100%;
-    width: 100%;
-    background-color: rgba(24, 28, 39, 0.5); /* 替换为半透明色 */
-    backdrop-filter: blur(12px); /* 毛玻璃模糊 */
-    -webkit-backdrop-filter: blur(12px); /* 兼容 Safari */
-    padding: 20px;
-    cursor: pointer;
-    overflow: hidden;
-    border: 1px solid rgba(156, 197, 226, 0.3);
-    border-radius: 12px; /* 添加圆角更贴合现代 UI */
-    transition: all 0.3s ease-in-out;
+.read-progress i {
+  display: block;
+  height: 100%;
+  background: var(--c-accent);
+  box-shadow: 0 0 12px var(--c-accent);
+  transform-origin: left center;
+  transform: scaleX(0);
 }
 
-.next-page .card:hover,
-.pre-page .card:hover {
-    border-color: #585877;
-    box-shadow: 0px 0px 10px #3c3f6d;
+.post-view {
+  padding: var(--nav-h) 28px 0;
 }
 
-.next-page .page-label {
-    text-align: right; 
+/* ---------- HERO ---------- */
+.header-container {
+  max-width: 1320px;
+  margin: 40px auto 80px;
+  color: var(--c-ink);
 }
 
-.next-page .page-title {
-    text-align: right; 
+.post-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 36px;
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
 }
 
-.page-label {
-    color: #9cc5e2;
-    font-size: 0.9em;
-    margin-bottom: 8px;
-}
-
-.page-title {
-    color: #e0e0e0;
-    font-size: 1.1em;
-    line-height: 1.6;
-    max-height: 3em;
-    overflow: hidden;
-    white-space: nowrap; 
-    text-overflow: hidden;
-}
-
-.arrow {
-    position: absolute;
-    color: #9cc5e2;
-    font-size: 1.5em;
-    top: 50%;
-    transform: translateY(-65%);
-    margin-bottom: 10%; 
-}
-
-.next-page .arrow {
-    right: 20px;
-}
-
-.pre-page .arrow {
-    left: 20px;
-}
-
-@media (max-width: 768px) {
-    .page-title {
-        font-size: 0.8em;
-    }
-}
-
-/* 页面整体背景改为透明 */
-.post-view { 
-  padding-top: 50px; 
-  background-color: transparent; /* 去除原本实色背景 */
-}
-
-.header-container { 
-  margin-top: 150px; 
-  margin-bottom: 150px; 
-  text-align: center;
-  color: #e0e0e0; 
-}
-
-.title { 
-  color: #9cc5e2;
-}
-
-.date { 
-  margin-top: 10px; 
-}
-
-.calender, .views { 
-  margin: 10px; 
-}
-
-.calender svg, .views svg { 
-  transform: translateY(-2px);
-  color: #888;
-}
-
-.views {
-  color: #888;
-}
-
-.main-content-layout {
-  display: flex; 
-  justify-content: center; 
-  gap: 30px; 
-  margin: 0 auto;
-  width: 90%; 
-  max-width: 1200px; 
-  padding-bottom: 50px; 
-}
-
-/* 文章主体区域添加半透明及毛玻璃 */
-.content-wrapper {
-  flex-grow: 1; 
-  min-width: 0; 
-  background-color: rgba(37, 45, 56, 0.6); /* 替换为半透明色 */
-  backdrop-filter: blur(12px); /* 毛玻璃模糊 */
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* 调整阴影增强质感 */
-  border: 1px solid rgba(255, 255, 255, 0.05); /* 添加发光边缘 */
-  border-radius: 12px; /* 圆角边缘更美观 */
-  padding: 40px 60px 40px 60px;
-  color: rgb(196, 198, 201);
-}
-
-.markdown-body ::v-deep {
-  line-height: 1.7; 
-  font-size: 16px; 
-}
-
-.markdown-body ::v-deep h1, 
-.markdown-body ::v-deep h2, 
-.markdown-body ::v-deep h3, 
-.markdown-body ::v-deep h4, 
-.markdown-body ::v-deep h5, 
-.markdown-body ::v-deep h6 {
-  position: relative; 
-  color: #9cc5e2; 
-  margin-top: 1.5em; 
-  margin-bottom: 1em; 
-  line-height: 1.3;
-  font-weight: 600; 
-  padding-bottom: 0.3em; 
-  border-bottom: 1px solid rgba(156, 197, 226, 0.2); 
-}
-.markdown-body ::v-deep h1 { font-size: 2.2em; }
-.markdown-body ::v-deep h2 { font-size: 1.8em; }
-.markdown-body ::v-deep h3 { font-size: 1.5em; }
-.markdown-body ::v-deep h4 { font-size: 1.2em; }
-
-.markdown-body ::v-deep p {
-  margin-bottom: 1em; 
-}
-
-.markdown-body ::v-deep ul, .markdown-body ::v-deep ol {
-  margin-bottom: 1em;
-  padding-left: 2em; 
-}
-
-.markdown-body ::v-deep li {
-  margin-bottom: 0.5em;
-}
-
-.markdown-body ::v-deep a {
-  color: #007bff; 
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 8px;
+  color: var(--c-ink-2);
   text-decoration: none;
+  transition: all 0.3s var(--ease-out);
 }
 
-.markdown-body ::v-deep a:hover {
+.back-link:hover {
+  color: var(--c-accent);
+  border-color: var(--c-accent);
+}
+
+.back-link:hover svg {
+  transform: translateX(-3px);
+}
+
+.back-link svg {
+  transition: transform 0.3s var(--ease-out);
+}
+
+.post-eyebrow-line {
+  flex: 1;
+  height: 1px;
+  background: var(--c-line-strong);
+}
+
+.post-eyebrow-num {
+  color: var(--c-accent);
+}
+
+.title {
+  color: var(--c-ink);
+}
+
+.title h1 {
+  margin: 0;
+  max-width: 1150px;
+  font-family: var(--f-sans);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 6.4vw, 6.2rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+
+.post-lead {
+  max-width: 760px;
+  margin: 30px 0 0;
+  font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+  line-height: 1.6;
+  color: var(--c-ink-2);
+}
+
+.post-lead .ui-serif {
+  color: var(--c-accent);
+  font-size: 1.6em;
+  line-height: 0;
+  vertical-align: -0.2em;
+  margin: 0 2px;
+}
+
+/* 数据格 */
+.post-cells {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.6fr);
+  margin-top: 48px;
+  border-top: 1px solid var(--c-line-strong);
+  border-bottom: 1px solid var(--c-line-strong);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 108px;
+  padding: 14px 18px 16px;
+  border-left: 1px solid var(--c-line);
+}
+
+.cell:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.cell-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--f-sans);
+  font-weight: 700;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+}
+
+.cell-value {
+  font-family: var(--f-sans);
+  font-weight: 800;
+  font-size: clamp(1.3rem, 2.4vw, 2.2rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.cell-value small {
+  margin-left: 4px;
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.6em;
+  color: var(--c-accent);
+  letter-spacing: 0;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0 -0.2em;
+}
+
+/* 封面 */
+.post-cover {
+  position: relative;
+  margin: 40px 0 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--c-line-strong);
+}
+
+.post-cover img {
+  display: block;
+  width: 100%;
+  max-height: 62vh;
+  object-fit: cover;
+  filter: grayscale(0.4) brightness(0.85);
+  transition: filter 0.8s ease;
+}
+
+.post-cover:hover img {
+  filter: none;
+}
+
+.post-cover figcaption {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--f-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+  mix-blend-mode: difference;
+}
+
+/* ---------- 正文三栏 ---------- */
+.main-content-layout {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 250px;
+  gap: 40px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.post-rail {
+  position: sticky;
+  top: 110px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.rail-mark {
+  display: flex;
+  flex-direction: column;
+}
+
+.rail-num {
+  font-family: var(--f-sans);
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: 4.6rem;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  color: var(--c-bg);
+  filter:
+        drop-shadow(1px 0 0 rgba(242, 240, 233, 0.35))
+        drop-shadow(-1px 0 0 rgba(242, 240, 233, 0.35))
+        drop-shadow(0 1px 0 rgba(242, 240, 233, 0.35))
+        drop-shadow(0 -1px 0 rgba(242, 240, 233, 0.35));
+}
+
+.rail-year {
+  margin-top: 8px;
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  color: var(--c-accent);
+}
+
+.rail-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--c-line-strong);
+}
+
+.rail-pct {
+  font-family: var(--f-sans);
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.rail-pct small {
+  font-size: 0.5em;
+  color: var(--c-ink-3);
+}
+
+.content-wrapper {
+  min-width: 0;
+  max-width: 780px;
+  color: var(--c-ink-2);
+}
+
+.content-end {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 56px;
+}
+
+.end-mark {
+  flex: 1;
+  height: 1px;
+  background: var(--c-line-strong);
+}
+
+/* ---------- Markdown ---------- */
+.markdown-body {
+  line-height: 1.85;
+  font-size: 16.5px;
+  counter-reset: h2;
+}
+
+.markdown-body :deep(h1),
+.markdown-body :deep(h2),
+.markdown-body :deep(h3),
+.markdown-body :deep(h4),
+.markdown-body :deep(h5),
+.markdown-body :deep(h6) {
+  position: relative;
+  color: var(--c-ink);
+  font-family: var(--f-sans);
+  margin-top: 2em;
+  margin-bottom: 0.7em;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  scroll-margin-top: 110px;
+}
+
+.markdown-body :deep(h1:first-child),
+.markdown-body :deep(h2:first-child),
+.markdown-body :deep(h3:first-child) {
+  margin-top: 0;
+}
+
+.markdown-body :deep(h1) { font-size: 2.1em; }
+.markdown-body :deep(h2) { font-size: 1.7em; padding-top: 0.6em; border-top: 1px solid var(--c-line-strong); }
+.markdown-body :deep(h3) { font-size: 1.32em; }
+.markdown-body :deep(h4) { font-size: 1.1em; }
+
+/* h2 自动编号，像原站的 RND.18 */
+.markdown-body :deep(h2) {
+  counter-increment: h2;
+}
+
+.markdown-body :deep(h2)::before {
+  content: 'RND.' counter(h2, decimal-leading-zero);
+  display: block;
+  margin-bottom: 10px;
+  font-family: var(--f-mono);
+  font-size: 0.42em;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--c-accent);
+}
+
+.markdown-body :deep(h3)::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 12px;
+  border-radius: 2px;
+  background: var(--c-accent);
+  transform: translateY(-3px) rotate(45deg);
+}
+
+.markdown-body :deep(p) {
+  margin-bottom: 1.2em;
+}
+
+.markdown-body :deep(strong) {
+  color: var(--c-ink);
+}
+
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) {
+  margin-bottom: 1.2em;
+  padding-left: 1.5em;
+}
+
+.markdown-body :deep(li) {
+  margin-bottom: 0.45em;
+}
+
+.markdown-body :deep(li::marker) {
+  color: var(--c-accent);
+}
+
+.markdown-body :deep(a) {
+  color: var(--c-accent);
   text-decoration: underline;
+  text-decoration-color: rgba(255, 128, 0, 0.35);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.25s;
 }
 
-.markdown-body ::v-deep pre {
-  background-color: rgba(13, 13, 13, 0.7); /* 让代码块稍微透明 */
-  border-radius: 6px;
-  padding: 1em;
-  overflow-x: auto; 
-  margin-bottom: 1.5em;
+.markdown-body :deep(a:hover) {
+  text-decoration-color: var(--c-accent);
+}
+
+.markdown-body :deep(img) {
+  max-width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+}
+
+/* 引用：大号衬线，像原站的 “Message from Lando” */
+.markdown-body :deep(blockquote:not(.markdown-alert)) {
+  position: relative;
+  margin: 2em 0;
+  padding: 0.2em 0 0.2em 1.4em;
+  border-left: 2px solid var(--c-accent);
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-size: 1.45em;
+  line-height: 1.35;
+  color: var(--c-ink);
+}
+
+.markdown-body :deep(blockquote p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-body :deep(table) {
+  width: 100%;
+  margin-bottom: 1.4em;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--c-line-strong);
+  text-align: left;
+}
+
+.markdown-body :deep(th) {
+  font-family: var(--f-sans);
+  font-size: 0.75em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+}
+
+.markdown-body :deep(pre) {
+  background-color: #0a0a08;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 12px;
+  padding: 2.4em 1.2em 1.2em;
+  overflow-x: auto;
+  margin-bottom: 1.6em;
   position: relative;
 }
 
-.markdown-body ::v-deep code {
-  background-color: rgba(116, 143, 166, 0.2); 
-  padding: 0.1em 0.2em;
+.markdown-body :deep(.code-lang) {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  font-family: var(--f-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+.markdown-body :deep(code) {
+  background-color: rgba(255, 128, 0, 0.1);
+  padding: 0.12em 0.36em;
   border-radius: 4px;
-  font-family: 'Fira Code', 'Cascadia Code', monospace; 
+  font-family: var(--f-mono);
+  font-size: 0.86em;
+  color: var(--c-accent-soft);
+}
+
+.markdown-body :deep(pre code) {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
   font-size: 0.9em;
-  color: #e0e0e0;
+  line-height: 1.65;
+  color: #e6e1d6;
 }
 
-.markdown-body ::v-deep pre code {
-    background-color: transparent; 
-    padding: 0;
-    border-radius: 0;
-    font-size: 1em;
-}
-
-.markdown-body ::v-deep .copy-btn {
+.markdown-body :deep(.copy-btn) {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  color: #e0e0e0;
+  background: rgba(20, 20, 17, 0.9);
+  border: 1px solid var(--c-line-strong);
+  border-radius: 6px;
+  color: var(--c-ink-2);
   cursor: pointer;
-  padding: 4px;
+  padding: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -605,108 +970,111 @@ export default {
   opacity: 0;
 }
 
-.markdown-body ::v-deep pre:hover .copy-btn {
+.markdown-body :deep(pre:hover .copy-btn) {
   opacity: 1;
 }
 
-.markdown-body ::v-deep .copy-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+.markdown-body :deep(.copy-btn:hover),
+.markdown-body :deep(.copy-btn.copied) {
+  color: var(--c-accent);
+  border-color: var(--c-accent);
 }
 
-.markdown-body ::v-deep hr {
-  height: 0.25em;
+.markdown-body :deep(hr) {
+  height: 1px;
   padding: 0;
-  margin: 24px 0;
-  background-color: rgba(156, 197, 226, 0.2);
+  margin: 36px 0;
+  background-color: var(--c-line-strong);
   border: 0;
+  opacity: 1;
 }
 
 /* GitHub Alerts */
-.markdown-body ::v-deep .markdown-alert {
-  padding: 0.5rem 1rem;
-  margin-bottom: 1rem;
-  border-left: 0.25em solid;
-  background-color: rgba(24, 28, 39, 0.5);
-  border-radius: 6px;
+.markdown-body :deep(.markdown-alert) {
+  padding: 0.8rem 1.1rem;
+  margin-bottom: 1.2rem;
+  border: 1px solid var(--c-line-strong);
+  border-left: 3px solid;
+  background-color: rgba(242, 240, 233, 0.025);
+  border-radius: 4px 10px 10px 4px;
 }
 
-.markdown-body ::v-deep .markdown-alert-title {
+.markdown-body :deep(.markdown-alert-title) {
   display: flex;
   align-items: center;
-  font-weight: 600;
+  font-family: var(--f-mono);
+  font-weight: 500;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   margin-bottom: 0.5rem;
-  font-size: 14px;
 }
 
-.markdown-body ::v-deep .markdown-alert-title svg {
+.markdown-body :deep(.markdown-alert-title svg) {
   margin-right: 8px;
 }
 
-.markdown-body ::v-deep .markdown-alert-note { border-color: #1f6feb; }
-.markdown-body ::v-deep .markdown-alert-note .markdown-alert-title { color: #58a6ff; }
-.markdown-body ::v-deep .markdown-alert-tip { border-color: #238636; }
-.markdown-body ::v-deep .markdown-alert-tip .markdown-alert-title { color: #3fb950; }
-.markdown-body ::v-deep .markdown-alert-important { border-color: #8957e5; }
-.markdown-body ::v-deep .markdown-alert-important .markdown-alert-title { color: #a371f7; }
-.markdown-body ::v-deep .markdown-alert-warning { border-color: #9e6a03; }
-.markdown-body ::v-deep .markdown-alert-warning .markdown-alert-title { color: #d29922; }
-.markdown-body ::v-deep .markdown-alert-caution { border-color: #da3633; }
-.markdown-body ::v-deep .markdown-alert-caution .markdown-alert-title { color: #f85149; }
+.markdown-body :deep(.markdown-alert-note) { border-left-color: #4c8dff; }
+.markdown-body :deep(.markdown-alert-note .markdown-alert-title) { color: #79a8ff; }
+.markdown-body :deep(.markdown-alert-tip) { border-left-color: #3fb950; }
+.markdown-body :deep(.markdown-alert-tip .markdown-alert-title) { color: #5fd471; }
+.markdown-body :deep(.markdown-alert-important) { border-left-color: var(--c-accent); }
+.markdown-body :deep(.markdown-alert-important .markdown-alert-title) { color: var(--c-accent); }
+.markdown-body :deep(.markdown-alert-warning) { border-left-color: #d29922; }
+.markdown-body :deep(.markdown-alert-warning .markdown-alert-title) { color: #e3b341; }
+.markdown-body :deep(.markdown-alert-caution) { border-left-color: #f85149; }
+.markdown-body :deep(.markdown-alert-caution .markdown-alert-title) { color: #ff7b72; }
 
-.markdown-body ::v-deep .header-anchor {
-  opacity: 0; 
-  position: absolute; 
-  left: -1.4em; 
-  top: 10%; 
-  padding-left: 0.5em;
-  font-size: 0.8em; 
-  text-decoration: none; 
-  color: #a0a0a0; 
-  transition: opacity 0.2s ease-in-out; 
-  padding-right: 0.5em; 
+.markdown-body :deep(.header-anchor) {
+  opacity: 0;
+  position: absolute;
+  left: -1.2em;
+  bottom: 0;
+  padding: 0 0.4em;
+  font-size: 0.8em;
+  text-decoration: none;
+  color: var(--c-accent);
+  transition: opacity 0.2s ease-in-out;
 }
 
-.markdown-body ::v-deep h1:hover .header-anchor, 
-.markdown-body ::v-deep h2:hover .header-anchor, 
-.markdown-body ::v-deep h3:hover .header-anchor, 
-.markdown-body ::v-deep h4:hover .header-anchor, 
-.markdown-body ::v-deep h5:hover .header-anchor, 
-.markdown-body ::v-deep h6:hover .header-anchor {
-  opacity: 1; 
+.markdown-body :deep(h1:hover .header-anchor),
+.markdown-body :deep(h2:hover .header-anchor),
+.markdown-body :deep(h3:hover .header-anchor),
+.markdown-body :deep(h4:hover .header-anchor),
+.markdown-body :deep(h5:hover .header-anchor),
+.markdown-body :deep(h6:hover .header-anchor) {
+  opacity: 1;
 }
 
-/* 侧边导航栏增加半透明毛玻璃 */
+/* ---------- 目录 ---------- */
 .toc-sidebar {
-  width: 250px; 
-  flex-shrink: 0; 
-  
-  /* 必须属性 */
-  position: sticky; 
-  top: 100px; /* 确保 top 值大于你顶部 Header/Navbar 的高度 */
-  align-self: flex-start; /* 关键：阻止 flex 把侧边栏拉伸到和文章一样高 */
-
-  max-height: calc(100vh - 120px); 
-  overflow-y: auto; 
-  
-  /* 毛玻璃等新样式保留 */
-  padding: 16px;
-  margin-left: 20px; 
-  background-color: rgba(37, 45, 56, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px; 
-  color: rgb(196, 198, 201);
+  position: sticky;
+  top: 110px;
+  align-self: start;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding-left: 18px;
+  border-left: 1px solid var(--c-line-strong);
+  color: var(--c-ink-2);
 }
 
 .toc-sidebar h3 {
-  color: #9cc5e2;
-  margin-top: 0;
-  margin-bottom: 1em;
-  font-size: 1.2em;
-  border-bottom: 1px solid rgba(156, 197, 226, 0.2);
-  padding-bottom: 0.5em;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--c-ink);
+}
+
+.toc-en {
+  font-family: var(--f-mono);
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-accent);
 }
 
 .toc-sidebar ul {
@@ -716,49 +1084,246 @@ export default {
 }
 
 .toc-sidebar li {
-  margin-bottom: 8px;
+  margin-bottom: 2px;
 }
 
 .toc-sidebar a {
-  text-decoration: none;
-  color: rgb(196, 198, 201);
+  position: relative;
   display: block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s ease-in-out;
+  padding: 5px 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  text-decoration: none;
+  color: var(--c-ink-3);
+  transition: color 0.2s, transform 0.3s var(--ease-out);
 }
 
 .toc-sidebar a:hover {
-  color: #83adda; 
-  background-color: rgba(0, 123, 255, 0.1); 
+  color: var(--c-ink);
+  transform: translateX(3px);
 }
 
 .toc-sidebar li.active a {
-  color: #83adda; 
-  background-color: rgba(0, 123, 255, 0.25); 
-  border-left: 4px solid #6a6ce1; 
+  color: var(--c-accent);
+}
+
+.toc-sidebar li.active a::before {
+  content: '';
+  position: absolute;
+  left: -19px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--c-accent);
+  box-shadow: 0 0 8px var(--c-accent);
 }
 
 .toc-sidebar li.level-3 {
-  padding-left: 15px;
-}
-.toc-sidebar li.level-4 {
-  padding-left: 30px;
+  padding-left: 12px;
 }
 
-@media (max-width: 768px) {
+.toc-sidebar li.level-4 {
+  padding-left: 24px;
+}
+
+/* ---------- 结尾 ---------- */
+.post-outro {
+  max-width: 1320px;
+  margin: 60px auto 0;
+  padding-top: 70px;
+  border-top: 1px solid var(--c-line);
+}
+
+.outro-statement {
+  margin: 0 0 50px;
+  font-size: clamp(3rem, 9vw, 8.6rem);
+  line-height: 0.85;
+  color: var(--c-ink);
+}
+
+.o-sans {
+  font-family: var(--f-sans);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.035em;
+}
+
+.o-serif {
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--c-accent);
+  margin-left: 0.18em;
+}
+
+.post-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.next-page {
+  grid-column: 2;
+}
+
+.pre-page .card,
+.next-page .card {
+  position: relative;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 76px;
+  cursor: pointer;
+  overflow: hidden;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 14px;
+  background: rgba(17, 17, 14, 0.9);
+  color: var(--c-ink);
+  transition: border-color 0.4s var(--ease-out), background 0.4s var(--ease-out);
+}
+
+.pre-page .card:hover,
+.next-page .card:hover {
+  border-color: var(--c-accent);
+  background: rgba(255, 128, 0, 0.06);
+}
+
+.next-page .page-label,
+.next-page .page-title {
+  text-align: right;
+}
+
+.page-label {
+  font-family: var(--f-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+  margin-bottom: 10px;
+}
+
+.page-title {
+  font-weight: 800;
+  font-size: clamp(1.1rem, 2vw, 1.6rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: color 0.3s;
+}
+
+.card:hover .page-title {
+  color: var(--c-accent);
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-ink-2);
+  font-size: 1.1rem;
+  transition: all 0.4s var(--ease-out);
+}
+
+.card:hover .arrow {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--c-accent-ink);
+}
+
+.pre-page .arrow { left: 18px; }
+.next-page .arrow { right: 18px; }
+
+.outro-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  margin-top: 34px;
+  padding: 0 18px 0 20px;
+  border-radius: 10px;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  font-weight: 800;
+  font-size: 0.84rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.3s, box-shadow 0.4s;
+}
+
+.outro-back:hover {
+  color: var(--c-accent-ink);
+  background: var(--c-accent-soft);
+  box-shadow: 0 12px 40px var(--c-accent-glow);
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 1200px) {
   .main-content-layout {
-    width: 95%; 
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) 240px;
   }
 
-  .content-wrapper {
-    width: 100%; 
-    padding: 20px; 
+  .post-rail {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .post-cells {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cell {
+    border-left: 0;
+    padding-left: 0;
+    border-bottom: 1px solid var(--c-line);
+    min-height: 88px;
+  }
+
+  .cell-tags {
+    grid-column: 1 / -1;
+    border-bottom: 0;
+  }
+
+  .main-content-layout {
+    grid-template-columns: 1fr;
   }
 
   .toc-sidebar {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .post-view {
+    padding: var(--nav-h) 16px 0;
+  }
+
+  .post-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .next-page {
+    grid-column: 1;
+  }
+
+  .pre-page .card,
+  .next-page .card {
+    padding: 16px 16px 16px 72px;
+  }
+
+  .next-page .card {
+    padding: 16px 72px 16px 16px;
   }
 }
 </style>

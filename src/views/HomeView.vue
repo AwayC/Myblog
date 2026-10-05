@@ -1,138 +1,388 @@
 <template>
-
-  <div class="home-container">
-
-    <div class="background-wrapper">
-      <MagneticBackground/>
-    </div>
-    
-    <div class="content-layer">
-      <div class="welcome-banner">
-        <h1 class="cyber-glow typewriter">AWAY's Studio</h1>
-        <p class="subtitle" style="font-weight: border;">developing ...</p>
+  <div
+    class="home"
+    ref="home"
+    :class="{ 'is-ready': ready, 'is-disco': disco }"
+    @pointermove="onPointerMove"
+  >
+    <!-- 背后的巨型字标：平时隐在暗处，被鼠标的“光”照亮 -->
+    <div class="wordmark" aria-hidden="true">
+      <div class="wordmark-half wordmark-left">
+        <span class="wm-base">AW</span>
+        <span class="wm-lit" ref="litL">AW</span>
       </div>
-      
-      <div class="post-link">
-        <router-link to="/Postlist" class="link-button">
-          <typeWord>
-            go to posts
-          </typeWord>
+      <div class="wordmark-gap"></div>
+      <div class="wordmark-half wordmark-right">
+        <span class="wm-base">AY</span>
+        <span class="wm-lit" ref="litR">AY</span>
+      </div>
+    </div>
+
+    <!-- 3D 头盔 -->
+    <HelmetStage
+      class="home-stage"
+      livery="dark"
+      :fill="stageFill"
+      :offset-y="stageOffset"
+      :mini-target="miniEl"
+      disco-egg
+      @disco="disco = $event"
+    />
+
+    <!-- 底部 -->
+    <div class="home-ui">
+      <div class="mini">
+        <div class="mini-head">
+          <span>Livery</span>
+          <span class="mini-year">2025</span>
+        </div>
+        <div class="mini-view" ref="mini"></div>
+        <div class="mini-foot">
+          <span>{{ disco ? 'Disco mode' : "Away's studio" }}</span>
+          <span>N°01</span>
+        </div>
+      </div>
+
+      <div class="caption">
+        <h1 class="caption-title">
+          <span class="cap-row">Code, pixels</span>
+          <span class="cap-row ui-serif">&amp; curiosity</span>
+        </h1>
+      </div>
+
+      <div class="home-actions">
+        <span class="home-hint">Move to light · type “disco”</span>
+        <router-link to="/Postlist" class="enter-btn roll-host">
+          <RollText text="Enter blog" />
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path d="M7 17L17 7M9 7h8v8" />
+          </svg>
         </router-link>
       </div>
-      
     </div>
-
   </div>
-
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 
-import typeWord from '@/components/typeWord.vue'; 
-import MagneticBackground from '../components/MagneticBackgroud.vue'; 
+// three.js 体积较大，只在需要 3D 头盔的页面按需加载
+const HelmetStage = defineAsyncComponent(() => import(/* webpackChunkName: "helmet" */ '@/components/HelmetStage.vue'));
 
 export default {
-  name: 'HomeView', 
+  name: 'HomeView',
   components: {
-    MagneticBackground, 
-    typeWord,
+    HelmetStage,
   },
-
+  data() {
+    return {
+      ready: false,
+      disco: false,
+      portrait: false,
+      miniEl: null,
+    };
+  },
+  computed: {
+    stageFill() {
+      return this.portrait ? 0.32 : 0.48;
+    },
+    stageOffset() {
+      return this.portrait ? 0.04 : 0.02;
+    },
+  },
+  mounted() {
+    this.miniEl = this.$refs.mini;
+    this.onResize();
+    window.addEventListener('resize', this.onResize);
+    window.addEventListener('away:reveal', this.onReveal);
+    if (!document.documentElement.classList.contains('is-covered')) this.onReveal();
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('away:reveal', this.onReveal);
+  },
+  methods: {
+    onReveal() {
+      this.ready = true;
+    },
+    onResize() {
+      this.portrait = window.innerWidth / window.innerHeight < 0.85;
+    },
+    onPointerMove(e) {
+      // 光斑中心换算到每个字块自己的坐标系
+      [this.$refs.litL, this.$refs.litR].forEach((el) => {
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--hx', `${e.clientX - r.left}px`);
+        el.style.setProperty('--hy', `${e.clientY - r.top}px`);
+      });
+    },
+  },
 };
 </script>
 
 <style scoped>
-.home-container {
-  padding-top: 50px; 
+.home {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100svh;
+  min-height: 560px;
+  width: 100%;
   overflow: hidden;
 }
 
-.background-wrapper {
+/* ---------- 巨型字标 ---------- */
+.wordmark {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2vw;
+  pointer-events: none;
+  user-select: none;
 }
 
-.content-layer {
+.wordmark-half {
   position: relative;
-  z-index: 1;  
+  font-family: var(--f-sans);
+  font-weight: 900;
+  font-stretch: 125%;
+  /* 两个字块 + 中间留给头盔的空隙要放得下一屏 */
+  font-size: min(calc((100vw - 40vh) / 3.8), 40vh);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  opacity: 0;
+  transform: translateY(10%);
+  transition: opacity 1.6s var(--ease-out) 1.2s, transform 1.6s var(--ease-out) 1.2s;
 }
 
-.welcome-banner {
-  margin-top: 20%; 
+.is-ready .wordmark-half {
+  opacity: 1;
+  transform: none;
+}
+
+.wordmark-gap {
+  flex: 0 0 40vh;
+}
+
+.wm-base,
+.wm-lit {
+  display: block;
+}
+
+.wm-base {
+  color: #11110e;
+  /* 可变字体的字形轮廓互相重叠，text-stroke 会把每一段都描出来（横杠处出现断开的线）。
+     改用四向 1px 投影拼出整体外轮廓，字母是一个完整的形状。 */
+  filter:
+    drop-shadow(1px 0 0 rgba(242, 240, 233, 0.07))
+    drop-shadow(-1px 0 0 rgba(242, 240, 233, 0.07))
+    drop-shadow(0 1px 0 rgba(242, 240, 233, 0.07))
+    drop-shadow(0 -1px 0 rgba(242, 240, 233, 0.07));
+}
+
+/* 被光照亮的那一层：用光标位置做径向遮罩 */
+.wm-lit {
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  --hx: -100vw;
+  --hy: -100vh;
+  background: radial-gradient(circle 20vmax at var(--hx) var(--hy), #ff8a1a 0%, #b34f00 35%, rgba(90, 40, 0, 0) 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.is-disco .wm-lit {
+  background: radial-gradient(circle 30vmax at var(--hx) var(--hy), #ff3d9a 0%, #7c4dff 35%, rgba(0, 200, 255, 0.15) 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: home-hue 3s linear infinite;
+}
+
+@keyframes home-hue {
+  to { filter: hue-rotate(360deg); }
+}
+
+.home-stage {
+  z-index: 1;
+}
+
+/* ---------- 底部 ---------- */
+.home-ui {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 24px;
+  padding: 0 28px 28px;
+}
+
+.home-ui > * {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 1.2s var(--ease-out), transform 1.2s var(--ease-out);
+}
+
+.is-ready .home-ui > * {
+  opacity: 1;
+  transform: none;
+}
+
+.is-ready .home-ui > :nth-child(1) { transition-delay: 2.2s; }
+.is-ready .home-ui > :nth-child(2) { transition-delay: 1.9s; }
+.is-ready .home-ui > :nth-child(3) { transition-delay: 2.4s; }
+
+/* 左下：线框头盔（three.js 直接画进 .mini-view 的区域） */
+.mini {
+  justify-self: start;
+  width: 150px;
+  font-family: var(--f-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+}
+
+.mini-head,
+.mini-foot {
+  display: flex;
+  justify-content: space-between;
+}
+
+.mini-year {
+  color: var(--c-accent);
+}
+
+.mini-view {
+  height: 112px;
+  margin: 4px 0;
+  background:
+    linear-gradient(var(--c-line-strong), var(--c-line-strong)) left top / 10px 1px no-repeat,
+    linear-gradient(var(--c-line-strong), var(--c-line-strong)) left top / 1px 10px no-repeat,
+    linear-gradient(var(--c-line-strong), var(--c-line-strong)) right bottom / 10px 1px no-repeat,
+    linear-gradient(var(--c-line-strong), var(--c-line-strong)) right bottom / 1px 10px no-repeat;
+}
+
+.caption {
   text-align: center;
-  margin-bottom: 140px; 
 }
 
-.cyber-glow.typewriter {
-  overflow: hidden; 
-  border-right: 2px solid #20c997; 
-  white-space: nowrap;
-  animation: 
-    typing 1.2s steps(12, end),
-    blink-caret 1s step-end infinite;
+.caption-title {
+  margin: 0;
+  font-family: var(--f-sans);
+  font-weight: 800;
+  font-size: clamp(1.3rem, 2.3vw, 2rem);
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: var(--c-ink);
 }
 
-@keyframes typing {
-  from { width: 0 }
-  to { width:  calc(12ch);}
+.cap-row {
+  display: block;
 }
 
-@keyframes blink-caret {
-  from, to { border-color: transparent }
-  50% { border-color: #20c997 }
+.caption-title .ui-serif {
+  text-transform: none;
+  color: var(--c-accent);
+  font-size: 1.12em;
 }
 
-
-
-
-.cyber-glow {
-  font-family: 'Orbitron', sans-serif;
-  color: #20c997;
-  text-shadow: 0 0 15px rgba(32, 201, 151, 0.4);
-  font-size: 2.5rem;
-  display: inline-block; 
+.home-actions {
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
 }
 
-.subtitle {
-  color: #8a8a8a;
-  font-size: 1.2rem;
+.home-hint {
+  font-family: var(--f-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
 }
 
-.post-link { 
-  margin-top: 50px; 
-  display: block; 
-  text-align: center;
-  font-family: 'Orbitron', sans-serif;
+.enter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 18px 0 20px;
+  border-radius: 10px;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  font-weight: 800;
+  font-size: 0.84rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out), background 0.3s;
+  pointer-events: auto;
 }
 
-.link-button { 
-  display: inline-block;
-  color: #b7bd0e !important; 
-  text-shadow: 0px 0px 10px rgba(213, 219, 62, 0.4);
-  transition: font-size 0.5s ease;
-  animation: 
-    shining 3.5s infinite;
+.enter-btn:hover {
+  color: var(--c-accent-ink);
+  background: var(--c-accent-soft);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px var(--c-accent-glow);
 }
 
-@keyframes shining {
-  0% {
-    text-shadow: 0px 0px 10px rgba(213, 219, 62, 0.4);
+.enter-btn svg {
+  transition: transform 0.4s var(--ease-out);
+}
+
+.enter-btn:hover svg {
+  transform: rotate(45deg);
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-aspect-ratio: 85/100) {
+  .wordmark {
+    flex-direction: column;
   }
-  50% {
-    text-shadow: 0px 0px 30px rgba(234, 240, 70, 0.8);
+
+  .wordmark-half {
+    font-size: 34vw;
   }
-  100% {
-    text-shadow: 0px 0px 10px rgba(213, 219, 62, 0.4);
+
+  .wordmark-gap {
+    flex: 0 0 36vh;
   }
 }
 
-.link-button:hover { 
-  font-size: 1.05rem;
+@media (max-width: 720px) {
+  .home-ui {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 14px;
+    padding: 0 16px 22px;
+  }
+
+  .mini,
+  .home-hint {
+    display: none;
+  }
+
+  .home-actions {
+    justify-self: center;
+    align-items: center;
+  }
 }
 
-
+@media (hover: none) {
+  .wm-lit {
+    background: radial-gradient(circle 40vmax at 50% 30%, #ff8a1a 0%, #b34f00 30%, rgba(90, 40, 0, 0) 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    opacity: 0.45;
+  }
+}
 </style>

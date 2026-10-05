@@ -5,6 +5,8 @@ module.exports = {
   ],
   plugins: [
 
-    '@babel/plugin-transform-private-methods'
+    '@babel/plugin-transform-private-methods',
+    // three.js (r16x+) 使用了 class static block
+    '@babel/plugin-transform-class-static-block'
   ]
 }

@@ -1,10 +1,20 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
+import { setupTransitions } from './transition';
+import RollText from './components/RollText.vue';
 
 // 导入 Bootstrap (如果您需要)
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap';
+
+// 自托管字体 + 全局主题 (放在 bootstrap 之后以覆盖其默认样式)
+import '@fontsource-variable/mona-sans/wdth.css';
+import '@fontsource/instrument-serif/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import './assets/theme.css';
 
 // 导入 markdown-it 及其插件
 import MarkdownIt from 'markdown-it';
@@ -47,5 +57,11 @@ const app = createApp(App);
 // 将 markdown-it 实例作为全局属性挂载到 Vue 应用上
 // 这样在任何组件中都可以通过 this.$markdown 访问它
 app.config.globalProperties.$markdown = md;
+
+// 按钮悬停时的字母滚动效果，全局可用
+app.component('RollText', RollText);
+
+// 加载幕布与页面转场（必须在 use(router) 之前注册，才能接管首次导航）
+setupTransitions(router);
 
 app.use(router).mount('#app');
