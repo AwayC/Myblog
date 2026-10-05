@@ -31,17 +31,24 @@
 
     <!-- 底部 -->
     <div class="home-ui">
-      <div class="mini">
-        <div class="mini-head">
-          <span>Livery</span>
-          <span class="mini-year">2025</span>
-        </div>
-        <div class="mini-view" ref="mini"></div>
-        <div class="mini-foot">
-          <span>{{ disco ? 'Disco mode' : "Away's studio" }}</span>
+      <!-- 点击左下角的线框头盔，切换原站的 disco 头盔 -->
+      <button
+        type="button"
+        class="mini"
+        :aria-pressed="disco ? 'true' : 'false'"
+        :aria-label="disco ? 'Switch back to the orange livery' : 'Switch to the disco helmet'"
+        @click="toggleDisco"
+      >
+        <span class="mini-head">
+          <span>{{ disco ? 'Disco' : 'Livery' }}</span>
+          <span class="mini-year">{{ disco ? 'On' : '2025' }}</span>
+        </span>
+        <span class="mini-view" ref="mini"></span>
+        <span class="mini-foot">
+          <span class="mini-cta">{{ disco ? 'Back to orange' : 'Click · disco' }}</span>
           <span>N°01</span>
-        </div>
-      </div>
+        </span>
+      </button>
 
       <div class="caption">
         <h1 class="caption-title">
@@ -51,7 +58,7 @@
       </div>
 
       <div class="home-actions">
-        <span class="home-hint">Move to light · type “disco”</span>
+        <span class="home-hint">Move to light</span>
         <router-link to="/Postlist" class="enter-btn roll-host">
           <RollText text="Enter blog" />
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4">
@@ -104,6 +111,9 @@ export default {
   methods: {
     onReveal() {
       this.ready = true;
+    },
+    toggleDisco() {
+      window.dispatchEvent(new CustomEvent('away:disco-toggle'));
     },
     onResize() {
       this.portrait = window.innerWidth / window.innerHeight < 0.85;
@@ -241,12 +251,18 @@ export default {
 /* 左下：线框头盔（three.js 直接画进 .mini-view 的区域） */
 .mini {
   justify-self: start;
+  display: block;
   width: 150px;
+  padding: 0;
+  border: 0;
+  background: none;
   font-family: var(--f-mono);
   font-size: 0.6rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  text-align: left;
   color: var(--c-ink-3);
+  cursor: pointer;
 }
 
 .mini-head,
@@ -255,18 +271,43 @@ export default {
   justify-content: space-between;
 }
 
+.mini-cta {
+  transition: color 0.3s;
+}
+
+.mini:hover .mini-cta,
+.mini:focus-visible .mini-cta {
+  color: var(--c-ink);
+}
+
+.mini:focus-visible {
+  outline: 1px solid var(--c-accent);
+  outline-offset: 6px;
+}
+
 .mini-year {
   color: var(--c-accent);
 }
 
 .mini-view {
+  display: block;
   height: 112px;
   margin: 4px 0;
+  transition: background-size 0.4s var(--ease-out);
   background:
     linear-gradient(var(--c-line-strong), var(--c-line-strong)) left top / 10px 1px no-repeat,
     linear-gradient(var(--c-line-strong), var(--c-line-strong)) left top / 1px 10px no-repeat,
     linear-gradient(var(--c-line-strong), var(--c-line-strong)) right bottom / 10px 1px no-repeat,
     linear-gradient(var(--c-line-strong), var(--c-line-strong)) right bottom / 1px 10px no-repeat;
+}
+
+/* 悬停时四角的取景框拉长，提示可以点击 */
+.mini:hover .mini-view {
+  background-size: 22px 1px, 1px 22px, 22px 1px, 1px 22px;
+}
+
+.is-disco .mini-year {
+  color: #ff4fd8;
 }
 
 .caption {

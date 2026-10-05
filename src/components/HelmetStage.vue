@@ -96,7 +96,12 @@ function loadDiscoAssets() {
     loadTexture(tl, 'disco-matcap.webp', { flipY: true }),
     loadTexture(tl, 'disco-mask.webp'),
     loadTexture(tl, 'disco-flare.webp', { srgb: true, flipY: true }),
-  ]).then(([gltf, matcap, mask, flare]) => ({ scene: gltf.scene, matcap, mask, flare }))
+    loadTexture(tl, 'helmet-disco.webp', { srgb: true }),
+    new HDRLoader().loadAsync(`${BASE}hdri/studio-light.hdr`),
+  ]).then(([gltf, matcap, mask, flare, livery, light]) => {
+    light.mapping = THREE.EquirectangularReflectionMapping;
+    return { scene: gltf.scene, matcap, mask, flare, livery, light };
+  })
     .catch((err) => {
       discoAssets = null;
       throw err;
@@ -106,22 +111,34 @@ function loadDiscoAssets() {
 
 // ---------- 材质补丁 ----------
 // 实体化：以模型局部 y 为界自上而下显现，交界处一圈橙色光边
-function addSolidReveal(material, uniforms, { darkenBack = false, key }) {
+function addSolidReveal(material, uniforms, { darkenBack = false, livery = false, key }) {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uSolid = uniforms.uSolid;
+    shader.uniforms.tNextLivery = uniforms.tNextLivery;
+    shader.uniforms.uLiveryMix = uniforms.uLiveryMix;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>
-        varying float vRevealY;`)
+        varying float vRevealY;
+        varying float vRevealX;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
-        vRevealY = position.y;`);
+        vRevealY = position.y;
+        vRevealX = position.x;`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform float uSolid;
-        varying float vRevealY;`)
+        uniform sampler2D tNextLivery;
+        uniform float uLiveryMix;
+        varying float vRevealY;
+        varying float vRevealX;`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
         float revealEdge = mix(0.05, -0.05, uSolid);
         if (vRevealY < revealEdge) discard;`)
-      .replace('#include <map_fragment>', `#include <map_fragment>
+      .replace('#include <map_fragment>', `${livery ? `
+        // 原站的涂装切换：一条带弧度的分界线从上往下扫过
+        vec4 liveryNow = texture2D(map, vMapUv);
+        vec4 liveryNext = texture2D(tNextLivery, vMapUv);
+        float liveryEdge = vRevealY - sin(vRevealX * PI) * sin(uLiveryMix * PI) * 0.1;
+        diffuseColor *= mix(liveryNext, liveryNow, step(liveryEdge, mix(0.05, -0.05, uLiveryMix)));` : '#include <map_fragment>'}
         ${darkenBack ? 'if (!gl_FrontFacing) diffuseColor.rgb *= 0.03;' : ''}`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         // 入场时自上而下实体化的那条扫描光边
@@ -166,18 +183,19 @@ function createWireMaterial(uniforms, { strength = 1, own = false } = {}) {
   });
 }
 
-function createDiscoMaterial({ matcap, mask }, uniforms) {
+function createDiscoMaterial({ matcap, mask, light }, uniforms) {
+  // 与原站一致：白色高金属度镜面 + 原站的亮色摄影棚 HDRI(1.5)，再叠加镜面球 matcap 和白色 logo 遮罩
   const material = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     metalness: 0.9,
     roughness: 0,
     transparent: true,
-    envMapIntensity: 1.6,
+    envMap: light,
+    envMapIntensity: 1.5,
   });
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, {
       uReveal: uniforms.uReveal,
-      uAccent: uniforms.uAccent,
       tDiscoMatcap: { value: matcap },
       tDiscoMask: { value: mask },
     });
@@ -193,23 +211,17 @@ function createDiscoMaterial({ matcap, mask }, uniforms) {
         uniform sampler2D tDiscoMatcap;
         uniform sampler2D tDiscoMask;
         uniform float uReveal;
-        uniform vec3 uAccent;
         varying vec2 vDiscoUv;
         varying vec3 vLocalPos;`)
       .replace('#include <dithering_fragment>', `#include <dithering_fragment>
         vec3 vDir = normalize(vViewPosition);
         vec3 mx = normalize(vec3(vDir.z, 0.0, -vDir.x));
         vec3 my = cross(vDir, mx);
-        vec2 matcapUv = vec2(dot(mx, normal), dot(my, normal)) * 0.495 + 0.5;
-        vec3 facets = texture2D(tDiscoMatcap, matcapUv).rgb;
+        vec2 matcapUv = vec2(dot(mx, vNormal), dot(my, vNormal)) * 0.495 + 0.5;
         float logo = texture2D(tDiscoMask, vDiscoUv).r;
-        vec3 ball = max(facets, vec3(0.02, 0.05, 0.07)) * (0.7 + outgoingLight * 1.4);
-        vec3 col = mix(ball, vec3(1.0), logo);
-        float threshold = mix(0.046, -0.046, uReveal);
-        float visible = step(threshold, vLocalPos.y);
-        float rim = smoothstep(0.004, 0.0, abs(vLocalPos.y - threshold)) * step(0.001, uReveal) * step(uReveal, 0.999);
-        col += uAccent * rim * 3.0;
-        gl_FragColor = vec4(col, max(visible, rim));`);
+        vec3 facets = texture2D(tDiscoMatcap, matcapUv).rgb;
+        vec3 col = mix(max(facets, vec3(0.0, 0.114, 0.144)) * outgoingLight, vec3(1.0), logo);
+        gl_FragColor = vec4(col, step(mix(0.0425, -0.0425, uReveal), vLocalPos.y));`);
   };
   material.customProgramCacheKey = () => 'away-disco';
   return material;
@@ -402,7 +414,6 @@ function createPost(renderer) {
   };
 }
 
-const TYPED_WORD = 'disco';
 // 环境贴图的基础朝向：让两盏柔光箱落在镜头一侧（头盔正前方）
 const ENV_YAW = 0;
 
@@ -415,7 +426,7 @@ export default {
     fill: { type: Number, default: 0.58 },
     // 头盔中心在画面中的竖直偏移（-1 ~ 1）
     offsetY: { type: Number, default: 0 },
-    // 是否开启输入 "disco" 的彩蛋
+    // 是否允许切换 disco 头盔（由页面派发 away:disco-toggle 事件触发）
     discoEgg: { type: Boolean, default: false },
     // 小号线框头盔要画进的 DOM 元素（左下角）
     miniTarget: { type: Object, default: null },
@@ -427,8 +438,6 @@ export default {
       target: new THREE.Vector2(0, 0),
       smooth: new THREE.Vector2(0, 0),
       lastPointerAt: 0,
-      typed: '',
-      typedAt: 0,
       discoOn: false,
       intro: { value: 0 },
       disposed: false,
@@ -467,7 +476,7 @@ export default {
     window.addEventListener('pointermove', this.onPointerMove, { passive: true });
     window.addEventListener('away:reveal', this.playIntro);
     document.addEventListener('visibilitychange', this.onVisibility);
-    if (this.discoEgg) window.addEventListener('keydown', this.onKeyDown);
+    if (this.discoEgg) window.addEventListener('away:disco-toggle', this.toggleDisco);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.$refs.container);
   },
@@ -480,10 +489,10 @@ export default {
     window.removeEventListener('pointermove', this.onPointerMove);
     window.removeEventListener('away:reveal', this.playIntro);
     document.removeEventListener('visibilitychange', this.onVisibility);
-    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('away:disco-toggle', this.toggleDisco);
     if (this.resizeObserver) this.resizeObserver.disconnect();
     if (t.timeline) t.timeline.kill();
-    if (t.uniforms) gsap.killTweensOf(t.uniforms.uReveal);
+    if (t.uniforms) gsap.killTweensOf([t.uniforms.uReveal, t.uniforms.uLiveryMix]);
     if (t.discoOn) {
       document.documentElement.classList.remove('is-disco');
       window.dispatchEvent(new CustomEvent('away:disco', { detail: { on: false } }));
@@ -549,13 +558,16 @@ export default {
 
       t.uniforms = {
         uTime: { value: 0 },
-        uReveal: { value: 0 }, // disco
+        uReveal: { value: 0 }, // disco 外壳
+        uLiveryMix: { value: 0 }, // 涂装：0 橙色 → 1 白色 disco
+        tNextLivery: { value: null },
         uSolid: { value: 0 }, // 实体化进度
         uWire: { value: 0 }, // 线框强度
         uAccent: { value: ACCENT.clone() },
       };
 
       const livery = chrome ? assets.liveries.bright : assets.liveries.dark;
+      t.uniforms.tNextLivery.value = livery; // disco 涂装加载前先用自己占位
       const maxAniso = renderer.capabilities.getMaxAnisotropy();
       livery.anisotropy = maxAniso;
       assets.helmet.normal.anisotropy = maxAniso;
@@ -570,7 +582,7 @@ export default {
         envMapIntensity: 1.5,
         side: THREE.DoubleSide,
       });
-      addSolidReveal(shell, t.uniforms, { darkenBack: true, key: 'shell' });
+      addSolidReveal(shell, t.uniforms, { darkenBack: true, livery: true, key: 'shell' });
 
       const glass = new THREE.MeshPhysicalMaterial({
         map: assets.glass.base,
@@ -592,6 +604,7 @@ export default {
       const wire = createWireMaterial(t.uniforms);
       const miniWire = createWireMaterial(t.uniforms, { strength: 0.32, own: true });
       t.materials = [shell, glass, plastic, wire, miniWire];
+      t.miniWire = miniWire;
       t.shell = shell;
 
       const model = assets.scene.clone();
@@ -697,21 +710,6 @@ export default {
       }
     },
 
-    onKeyDown(e) {
-      const el = e.target;
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
-      if (!e.key || e.key.length !== 1) return;
-      const t = this.t;
-      const now = performance.now();
-      if (now - t.typedAt > 5000) t.typed = '';
-      t.typedAt = now;
-      t.typed = (t.typed + e.key.toLowerCase()).slice(-TYPED_WORD.length);
-      if (t.typed === TYPED_WORD) {
-        t.typed = '';
-        this.toggleDisco();
-      }
-    },
-
     async toggleDisco() {
       const t = this.t;
       if (!t.pivot) return;
@@ -730,7 +728,9 @@ export default {
           return;
         }
       }
+      // 与原站一致：disco 外壳和底下的涂装同时用 2 秒 expo 过渡
       gsap.to(t.uniforms.uReveal, { value: t.discoOn ? 1 : 0, duration: 2, ease: 'expo.inOut' });
+      gsap.to(t.uniforms.uLiveryMix, { value: t.discoOn ? 1 : 0, duration: 2, ease: 'expo.inOut' });
     },
 
     buildDisco(assets) {
@@ -761,6 +761,7 @@ export default {
 
       t.model.add(disco);
       t.disco = disco;
+      t.uniforms.tNextLivery.value = assets.livery;
       t.materials.push(material, flareMaterial);
     },
 
@@ -795,6 +796,11 @@ export default {
       u.uTime.value = time;
       const discoActive = t.discoOn || u.uReveal.value > 0.001;
       if (t.disco) t.disco.visible = discoActive;
+      // 左下角的小线框头盔：disco 时变成彩色
+      if (t.miniWire) {
+        if (t.discoOn) t.miniWire.uniforms.uColor.value.setHSL((time * 0.15) % 1, 1, 0.6);
+        else t.miniWire.uniforms.uColor.value.copy(ACCENT);
+      }
 
       const { renderer } = t;
       // 主场景 → 离屏 → 辉光 → 屏幕

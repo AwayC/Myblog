@@ -1,9 +1,14 @@
 {
-    "前端": "#FFB27A",
-    "JavaScript": "#F2D27C",
-    "C/C++": "#9FC3DA",
-    "嵌入式": "#A9CFA0",
-    "心得": "#C9B9EE",
-    "Linux": "#D8D1C3",
-    "default": "#CFC9BC"
+  "前端": "#FFB980",
+  "JavaScript": "#ECD386",
+  "设计模式": "#C8D696",
+  "嵌入式": "#AAD9AB",
+  "单片机": "#94DBCA",
+  "面试": "#9BDBE2",
+  "C/C++": "#9ECAEA",
+  "SQL数据库": "#ABBBF2",
+  "心得": "#CEB8F3",
+  "Raspberry Pi": "#F3A3BB",
+  "Linux": "#D7D0C4",
+  "default": "#CCC6BD"
 }
