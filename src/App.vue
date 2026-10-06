@@ -48,10 +48,12 @@ html, body {
   overflow-x: clip; /* 防止出现横向滚动条 */
 }
 
-html.menu-open,
-html.menu-open body {
-  overflow: hidden;
+/* 滚动条始终保留：切换到短页面（首页、加载中）时不会消失，页面宽度不跳。
+   不需要滚动时只剩透明的空轨道 */
+html {
+  overflow-y: scroll;
 }
+
 
 /* 全局滚动条 */
 ::-webkit-scrollbar {

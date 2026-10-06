@@ -7,7 +7,7 @@
     </div>
 
     <div class="curtain-center" ref="center">
-      <AwayMark class="curtain-mark" :size="92" dot :draw="drawKey > 0" :key="drawKey" />
+      <AwayMark class="curtain-mark" :size="92" dot loop :key="drawKey" />
       <div class="curtain-label">{{ label }}</div>
     </div>
 

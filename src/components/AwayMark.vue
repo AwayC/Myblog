@@ -1,7 +1,7 @@
 <template>
   <svg
     class="away-mark"
-    :class="{ 'is-draw': draw }"
+    :class="{ 'is-draw': draw && !loop, 'is-loop': loop }"
     viewBox="0 0 74 42"
     :width="size"
     :height="size * 42 / 74"
@@ -32,6 +32,8 @@ export default {
     dot: { type: Boolean, default: false },
     // 描边绘制动画（用于加载 / 转场）
     draw: { type: Boolean, default: false },
+    // 循环播放：描边 → 填色 → 停留 → 擦除，一直重复（加载幕布用）
+    loop: { type: Boolean, default: false },
   },
 };
 </script>
@@ -69,6 +71,38 @@ export default {
   transform-origin: 69.5px 34.5px;
   transform: scale(0);
   animation: mark-dot 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 1.2s forwards;
+}
+
+/* 循环版：一轮 2.6s */
+.is-loop .mark-a,
+.is-loop .mark-w {
+  stroke: currentColor;
+  stroke-dasharray: 260;
+  animation: mark-loop 2.6s cubic-bezier(0.65, 0, 0.35, 1) infinite both;
+}
+
+.is-loop .mark-w {
+  animation-delay: 0.15s;
+}
+
+.is-loop .mark-dot {
+  transform-origin: 69.5px 34.5px;
+  animation: mark-dot-loop 2.6s ease infinite both;
+}
+
+@keyframes mark-loop {
+  0% { stroke-dashoffset: 260; stroke-width: 1.2; fill-opacity: 0; }
+  38% { stroke-dashoffset: 0; stroke-width: 1.2; fill-opacity: 0; }
+  52% { stroke-dashoffset: 0; stroke-width: 0; fill-opacity: 1; }
+  76% { stroke-dashoffset: 0; stroke-width: 0; fill-opacity: 1; }
+  86% { stroke-dashoffset: 0; stroke-width: 1.2; fill-opacity: 0; }
+  100% { stroke-dashoffset: -260; stroke-width: 1.2; fill-opacity: 0; }
+}
+
+@keyframes mark-dot-loop {
+  0%, 44% { transform: scale(0); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  56%, 78% { transform: scale(1); animation-timing-function: ease-in; }
+  86%, 100% { transform: scale(0); }
 }
 
 @keyframes mark-draw {

@@ -7,7 +7,7 @@
       </svg>
     </router-link>
 
-    <router-link to="/" class="nav-mark" aria-label="Home" @click="close">
+    <router-link to="/" class="nav-mark" ref="mark" aria-label="Home" @click="close">
       <AwayMark :size="46" />
     </router-link>
 
@@ -31,18 +31,23 @@
       </button>
     </div>
 
-    <!-- 全屏菜单：左侧图片格随悬停的链接上色，右侧大号链接 -->
-    <div id="site-menu" class="menu" :aria-hidden="open ? 'false' : 'true'" @pointermove="onMenuPointer">
-      <div class="menu-tiles" :style="tilesStyle">
-        <div
-          v-for="(item, i) in allLinks"
-          :key="item.label"
-          class="menu-tile"
-          :class="{ 'is-lit': activeTile === i }"
-          :style="{ '--i': i }"
-        >
-          <div class="tile-img" :style="item.tileStyle"></div>
-          <span class="tile-label">0{{ i + 1 }} — {{ item.label }}</span>
+    <!-- 全屏菜单（复刻原站）：椭圆裁切从顶部展开，图片和链接依次跟进；关闭时整条时间线 1.5 倍速倒放 -->
+    <div id="site-menu" ref="menu" class="menu" :aria-hidden="open ? 'false' : 'true'" @pointermove="onMenuPointer">
+      <!-- 两列图片：列容器随鼠标上下反向错开，列里的图片各自做出场动画 -->
+      <div class="menu-tiles" ref="tiles">
+        <div v-for="(col, c) in tileColumns" :key="c" class="menu-col">
+          <div
+            v-for="{ item, i } in col"
+            :key="item.label"
+            class="menu-tile"
+            :class="{ 'is-lit': activeTile === i }"
+            :data-i="i"
+          >
+            <div class="tile-img" :style="item.tileStyle"></div>
+            <!-- 上色层：悬停的 1，当前页 0.5，其余 0 -->
+            <div class="tile-img tile-top" :style="[item.tileStyle, { opacity: tileOpacity(i) }]"></div>
+            <span class="tile-label menu-hl">0{{ i + 1 }} — {{ item.label }}<i class="hl-block"></i></span>
+          </div>
         </div>
       </div>
 
@@ -54,7 +59,6 @@
               class="menu-link roll-host"
               :href="item.href"
               target="_blank"
-              :style="{ '--i': i }"
               @pointerenter="hovered = i"
               @click="close"
             >
@@ -66,7 +70,6 @@
               class="menu-link roll-host"
               :class="{ 'is-current': isCurrent(item) }"
               :to="item.to"
-              :style="{ '--i': i }"
               @pointerenter="hovered = i"
               @click="close"
             >
@@ -80,15 +83,15 @@
 
         <div class="menu-badge">
           <AwayMark :size="38" dot />
-          <span>AWAY'S STUDIO<br>SINCE 2025</span>
+          <span class="menu-hl">AWAY'S STUDIO<br>SINCE 2025<i class="hl-block"></i></span>
         </div>
       </div>
 
       <div class="menu-foot">
-        <router-link to="/admin" class="menu-small roll-host" @click="close"><RollText text="Admin / 后台" /></router-link>
+        <router-link to="/admin" class="menu-small menu-hl roll-host" @click="close"><RollText text="Admin / 后台" /><i class="hl-block"></i></router-link>
         <div class="menu-socials">
-          <a class="roll-host" href="https://github.com/AwayC/" target="_blank" rel="noopener noreferrer" @click="close"><RollText text="GitHub" /></a>
-          <a class="roll-host" href="https://space.bilibili.com/470833519" target="_blank" rel="noopener noreferrer" @click="close"><RollText text="Bilibili" /></a>
+          <a class="menu-hl roll-host" href="https://github.com/AwayC/" target="_blank" rel="noopener noreferrer" @click="close"><RollText text="GitHub" /><i class="hl-block"></i></a>
+          <a class="menu-hl roll-host" href="https://space.bilibili.com/470833519" target="_blank" rel="noopener noreferrer" @click="close"><RollText text="Bilibili" /><i class="hl-block"></i></a>
         </div>
       </div>
     </div>
@@ -96,6 +99,7 @@
 </template>
 
 <script>
+import gsap from 'gsap';
 import AwayMark from './AwayMark.vue';
 
 const BASE = process.env.BASE_URL || '/';
@@ -104,10 +108,29 @@ const BASE = process.env.BASE_URL || '/';
 const TILES_URL = `${BASE}menu/tiles.json`;
 const DEFAULT_TILES = {
   Home: { image: 'menu/home.webp', size: '320%', position: '22% 18%' },
-  Posts: { image: 'menu/posts.webp', size: '260%', position: '78% 62%' },
+  Posts: { image: 'menu/posts.png', size: 'cover', position: 'center' },
   Friends: { image: 'menu/friends.jpg', size: 'cover', position: 'center' },
   Cube: { image: 'menu/cube.webp', size: 'cover', position: 'center' },
 };
+
+// 删除线用了 non-scaling-stroke，虚线按屏幕像素计算，
+// 所以要按 SVG 被拉伸后的实际长度来算，而不是 getTotalLength() 的视图框长度
+function strikeLength(path) {
+  const svg = path.ownerSVGElement;
+  const box = svg.getBoundingClientRect();
+  const vb = svg.viewBox.baseVal;
+  const sx = box.width / vb.width;
+  const sy = box.height / vb.height;
+  const total = path.getTotalLength();
+  let len = 0;
+  let prev = path.getPointAtLength(0);
+  for (let i = 1; i <= 64; i++) {
+    const pt = path.getPointAtLength((total * i) / 64);
+    len += Math.hypot((pt.x - prev.x) * sx, (pt.y - prev.y) * sy);
+    prev = pt;
+  }
+  return Math.ceil(len) + 4;
+}
 
 function tileStyle(t) {
   if (!t || !t.image) return {};
@@ -127,8 +150,7 @@ export default {
       open: false,
       scrolled: false,
       hovered: -1,
-      tilt: { x: 0, y: 0 },
-      tiles: DEFAULT_TILES,
+      tiles: null, // 等 tiles.json 读到再出图，免得先请求默认图
       links: [
         { to: '/', label: 'Home', name: 'home' },
         { to: '/Postlist', label: 'Posts', name: ['Postlist', 'post'] },
@@ -138,17 +160,20 @@ export default {
     };
   },
   computed: {
+    // 按阅读顺序分到左右两列：0 2 / 1 3
+    tileColumns() {
+      const cols = [[], []];
+      this.allLinks.forEach((item, i) => cols[i % 2].push({ item, i }));
+      return cols;
+    },
     allLinks() {
-      return this.links.map((l) => ({ ...l, tileStyle: tileStyle(this.tiles[l.label]) }));
+      return this.links.map((l) => ({ ...l, tileStyle: tileStyle(this.tiles && this.tiles[l.label]) }));
     },
     currentIndex() {
       return this.allLinks.findIndex((l) => this.isCurrent(l));
     },
     activeTile() {
       return this.hovered >= 0 ? this.hovered : this.currentIndex;
-    },
-    tilesStyle() {
-      return { transform: `translate3d(${this.tilt.x * -14}px, ${this.tilt.y * -10}px, 0)` };
     },
   },
   watch: {
@@ -157,7 +182,11 @@ export default {
     },
     open(val) {
       document.documentElement.classList.toggle('menu-open', val);
-      if (!val) this.hovered = -1;
+      if (val) this.playOpen();
+      else {
+        this.hovered = -1;
+        this.playClose();
+      }
     },
   },
   mounted() {
@@ -165,10 +194,13 @@ export default {
     window.addEventListener('keydown', this.onKey);
     this.onScroll();
     this.loadTiles();
+    this.buildMenuTimeline();
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('keydown', this.onKey);
+    this.lockScroll(false);
+    if (this.menuTl) this.menuTl.kill();
     document.documentElement.classList.remove('menu-open');
   },
   methods: {
@@ -178,18 +210,19 @@ export default {
       return names.includes(this.$route.name);
     },
     async loadTiles() {
+      const tiles = { ...DEFAULT_TILES };
       try {
         const res = await fetch(TILES_URL, { cache: 'no-cache' });
-        if (!res.ok) return;
-        const conf = await res.json();
-        const tiles = { ...DEFAULT_TILES };
-        Object.keys(tiles).forEach((k) => {
-          if (conf[k] && conf[k].image) tiles[k] = { ...tiles[k], ...conf[k] };
-        });
-        this.tiles = tiles;
+        if (res.ok) {
+          const conf = await res.json();
+          Object.keys(tiles).forEach((k) => {
+            if (conf[k] && conf[k].image) tiles[k] = { ...tiles[k], ...conf[k] };
+          });
+        }
       } catch (e) {
         // 配置读不到就用默认图
       }
+      this.tiles = tiles;
     },
     toggle() {
       this.open = !this.open;
@@ -203,9 +236,92 @@ export default {
     onKey(e) {
       if (e.key === 'Escape') this.close();
     },
+    tileOpacity(i) {
+      if (this.hovered >= 0) return this.hovered === i ? 1 : 0;
+      return this.currentIndex === i ? 0.5 : 0;
+    },
+    // 与原站同一套参数（lando-by-OFF+BRAND 的导航时间线）
+    buildMenuTimeline() {
+      const { menu, tiles } = this.$refs;
+      // 出场顺序按链接顺序，而不是 DOM 里的列顺序
+      const tileEls = [...tiles.querySelectorAll('.menu-tile')].sort((a, b) => a.dataset.i - b.dataset.i);
+      const links = menu.querySelectorAll('.menu-link');
+      const hls = menu.querySelectorAll('.menu-hl');
+      const blocks = menu.querySelectorAll('.hl-block');
+      const shown = 'ellipse(120% 100% at 50% 20%)';
+
+      gsap.set(menu, { clipPath: 'ellipse(120% 0% at 50% 0%)', display: 'none' });
+      gsap.set(tileEls, { clipPath: 'ellipse(120% 0% at 50% 0%)', y: 25 });
+      gsap.set(links, { clipPath: 'ellipse(30% 0% at 50% 0%)', y: 20 });
+      gsap.set(hls, { clipPath: 'inset(0 100% 0 0)', y: 15 });
+      gsap.set(blocks, { scaleX: 1 });
+
+      this.menuTl = gsap.timeline({
+        paused: true,
+        onStart: () => gsap.set(menu, { display: 'grid' }),
+        onReverseComplete: () => {
+          gsap.set(menu, { display: 'none' });
+          gsap.to(tiles.querySelectorAll('.menu-col'), { y: 0, duration: 0.3, ease: 'power2.inOut' });
+        },
+      })
+        .to(menu, { clipPath: shown, duration: 0.8, ease: 'power3.out' }, 0)
+        .to(tileEls, { clipPath: shown, y: 0, duration: 0.8, stagger: 0.06, ease: 'power3.out' }, 0.15)
+        .to(links, { clipPath: shown, y: 0, duration: 0.6, stagger: 0.08, ease: 'back.out(1.2)' }, 0.35)
+        .to(hls, { clipPath: 'inset(0 0% 0 0)', y: 0, duration: 0.7, stagger: 0.04, ease: 'back.out(1.1)' }, 0.5)
+        .to(blocks, { scaleX: 0, duration: 0.6, stagger: 0.05, ease: 'power2.inOut' }, 0.7);
+    },
+    playOpen() {
+      this.lockScroll(true);
+      gsap.set(this.$refs.menu, { display: 'grid' });
+      this.menuTl.timeScale(1).play();
+      gsap.to(this.$refs.mark.$el, { opacity: 0, duration: 0.4, ease: 'power2.out' });
+      // 当前页的波浪删除线：在链接出现后画出来（与原站一样 0.4s 起、0.6s 画完）
+      this.$nextTick(() => {
+        const path = this.$refs.menu.querySelector('.menu-strike path');
+        if (!path) return;
+        const len = strikeLength(path);
+        gsap.killTweensOf(path);
+        gsap.fromTo(
+          path,
+          { opacity: 1, strokeDasharray: `${len} ${len}`, strokeDashoffset: len },
+          { strokeDashoffset: 0, duration: 0.6, delay: 0.4, ease: 'power2.inOut' },
+        );
+      });
+    },
+    playClose() {
+      this.lockScroll(false);
+      this.menuTl.timeScale(1.5).reverse();
+      gsap.to(this.$refs.mark.$el, { opacity: 1, duration: 0.4, ease: 'power2.out' });
+      // 删除线从末端收回；点了别的页面时，新出现的删除线保持隐藏（CSS 默认透明）
+      const path = this.$refs.menu.querySelector('.menu-strike path');
+      if (path && path.style.opacity === '1') {
+        const len = strikeLength(path);
+        gsap.killTweensOf(path);
+        gsap.to(path, { strokeDashoffset: len, duration: 0.3, ease: 'power2.in', onComplete: () => gsap.set(path, { opacity: 0 }) });
+      }
+    },
+    // 只拦截滚动输入、不隐藏滚动条，页面宽度不会跳（原站是暂停 Lenis）
+    lockScroll(on) {
+      if (on === !!this.scrollLocked) return;
+      this.scrollLocked = on;
+      const method = on ? 'addEventListener' : 'removeEventListener';
+      window[method]('wheel', this.blockScroll, { passive: false });
+      window[method]('touchmove', this.blockScroll, { passive: false });
+      window[method]('keydown', this.blockScrollKeys);
+    },
+    blockScroll(e) {
+      e.preventDefault();
+    },
+    blockScrollKeys(e) {
+      const keys = [' ', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown'];
+      if (keys.includes(e.key) && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) e.preventDefault();
+    },
+    // 两列图片随鼠标上下反向错开
     onMenuPointer(e) {
-      this.tilt.x = e.clientX / window.innerWidth - 0.5;
-      this.tilt.y = e.clientY / window.innerHeight - 0.5;
+      const d = (e.clientY / window.innerHeight - 0.5) * 2 * 3;
+      const [a, b] = this.$refs.tiles.querySelectorAll('.menu-col');
+      gsap.to(a, { y: `${-d}rem`, duration: 2, ease: 'power2.out', overwrite: 'auto' });
+      gsap.to(b, { y: `${d}rem`, duration: 2, ease: 'power2.out', overwrite: 'auto' });
     },
   },
 };
@@ -336,12 +452,32 @@ export default {
   background: rgba(12, 12, 10, 0.35);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
   cursor: pointer;
-  transition: background 0.3s, border-color 0.3s;
+  transition: background 0.3s, border-color 0.75s cubic-bezier(0.65, 0.05, 0, 1);
+}
+
+/* 悬停：和原站一样，色块从顶部以弧形涌下铺满，移开时向上收回 */
+.nav-menu-btn::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: var(--c-accent);
+  clip-path: ellipse(120% 0% at 50% 0%);
+  transition: clip-path 0.55s cubic-bezier(0.65, 0.05, 0, 1);
+}
+
+.nav-menu-btn:hover::before,
+.nav-menu-btn:focus-visible::before {
+  clip-path: ellipse(150% 160% at 50% 0%);
 }
 
 .nav-menu-btn:hover {
-  border-color: var(--c-ink);
+  border-color: var(--c-accent);
+}
+
+.nav-menu-btn:hover .bar {
+  background: var(--c-accent-ink);
 }
 
 .bar {
@@ -361,6 +497,10 @@ export default {
 .is-open .nav-menu-btn {
   background: var(--c-ink);
   border-color: var(--c-ink);
+}
+
+.is-open .nav-menu-btn:hover {
+  border-color: var(--c-accent);
 }
 
 .is-open .bar {
@@ -393,14 +533,6 @@ export default {
   grid-template-rows: 1fr auto;
   padding: calc(var(--nav-h) + 3vh) 28px 24px;
   background: #0f0f0c;
-  clip-path: inset(0 0 100% 0);
-  transition: clip-path 0.8s var(--ease-out);
-  pointer-events: none;
-}
-
-.is-open .menu {
-  clip-path: inset(0 0 0 0);
-  pointer-events: auto;
 }
 
 .menu-tiles {
@@ -409,7 +541,13 @@ export default {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2.4vw;
   width: min(100%, 64vh);
-  transition: transform 0.9s var(--ease-out);
+}
+
+.menu-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2.4vw;
+  will-change: transform;
 }
 
 .menu-tile {
@@ -418,15 +556,6 @@ export default {
   overflow: hidden;
   border-radius: 4px;
   background: var(--c-bg-elev);
-  opacity: 0;
-  transform: translateY(40px) scale(0.96);
-  transition: opacity 0.7s var(--ease-out), transform 0.9s var(--ease-out);
-}
-
-.is-open .menu-tile {
-  opacity: 1;
-  transform: none;
-  transition-delay: calc(0.15s + var(--i) * 0.07s);
 }
 
 .tile-img {
@@ -435,11 +564,15 @@ export default {
   background-repeat: no-repeat;
   filter: grayscale(1) contrast(1.05) brightness(0.55);
   transform: scale(1.04);
-  transition: filter 0.6s ease, transform 1.2s var(--ease-out);
+  transition: transform 1.2s var(--ease-out);
+}
+
+.tile-top {
+  filter: none;
+  transition: opacity 0.25s ease, transform 1.2s var(--ease-out);
 }
 
 .menu-tile.is-lit .tile-img {
-  filter: none;
   transform: scale(1.12);
 }
 
@@ -477,15 +610,7 @@ export default {
   gap: 6px;
   color: var(--c-ink);
   text-decoration: none;
-  opacity: 0;
-  transform: translateY(100%);
-  transition: opacity 0.6s var(--ease-out), transform 0.7s var(--ease-out), color 0.25s;
-}
-
-.is-open .menu-link {
-  opacity: 1;
-  transform: none;
-  transition-delay: calc(0.2s + var(--i) * 0.06s), calc(0.2s + var(--i) * 0.06s), 0s;
+  transition: color 0.25s;
 }
 
 .menu-label {
@@ -532,13 +657,7 @@ export default {
   stroke-width: 4;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
-  stroke-dasharray: 400;
-  stroke-dashoffset: 400;
-}
-
-.is-open .menu-strike path {
-  transition: stroke-dashoffset 0.9s var(--ease-out) 0.6s;
-  stroke-dashoffset: 0;
+  opacity: 0; /* 由打开菜单的动画画出来 */
 }
 
 .menu-badge {
@@ -550,16 +669,26 @@ export default {
   font-size: 0.6rem;
   letter-spacing: 0.16em;
   line-height: 1.5;
-  opacity: 0;
-  transition: opacity 0.6s ease;
 }
 
-.is-open .menu-badge {
-  opacity: 1;
-  transition-delay: 0.55s;
+/* 小字：原站的色块刷出 */
+.menu-hl:not(.tile-label) {
+  position: relative;
+  display: inline-block;
+}
+
+.hl-block {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--c-accent);
+  transform-origin: right center;
+  pointer-events: none;
 }
 
 .menu-foot {
+  position: relative;
+  z-index: 2; /* 图片列上下错开时不压住底部链接 */
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
@@ -570,13 +699,6 @@ export default {
   font-size: 0.76rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  opacity: 0;
-  transition: opacity 0.6s ease;
-}
-
-.is-open .menu-foot {
-  opacity: 1;
-  transition-delay: 0.5s;
 }
 
 .menu-socials {
