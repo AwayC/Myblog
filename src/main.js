@@ -3,6 +3,7 @@ import App from './App.vue';
 import router from './router';
 import { setupTransitions } from './transition';
 import RollText from './components/RollText.vue';
+import highlight from './directives/highlight';
 
 // 导入 Bootstrap (如果您需要)
 import 'bootstrap/dist/css/bootstrap.css';
@@ -60,6 +61,7 @@ app.config.globalProperties.$markdown = md;
 
 // 按钮悬停时的字母滚动效果，全局可用
 app.component('RollText', RollText);
+app.directive('high', highlight);
 
 // 加载幕布与页面转场（必须在 use(router) 之前注册，才能接管首次导航）
 setupTransitions(router);

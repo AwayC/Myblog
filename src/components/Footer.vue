@@ -5,7 +5,7 @@
         <svg class="footer-scribble" viewBox="0 0 260 60" aria-hidden="true">
           <path d="M6 44 C 30 10, 52 8, 58 30 S 70 58, 92 30 S 120 4, 140 26 S 168 54, 196 22 S 236 10, 254 18" />
         </svg>
-        <h2 class="statement">
+        <h2 class="statement" v-high>
           <span class="st-row"><span class="st-sans">KEEP</span> <span class="st-serif">pushing</span></span>
           <span class="st-row"><span class="st-sans">FLAT</span> <span class="st-serif">out</span><span class="st-dot">.</span></span>
         </h2>
@@ -13,13 +13,13 @@
 
       <div class="footer-grid">
         <div class="footer-col">
-          <span class="ui-eyebrow">Pages</span>
+          <span class="ui-eyebrow" v-high>Pages</span>
           <router-link class="roll-host" to="/"><RollText text="Home" /></router-link>
           <router-link class="roll-host" to="/Postlist"><RollText text="Posts" /></router-link>
           <router-link class="roll-host" to="/friends"><RollText text="Friends" /></router-link>
         </div>
         <div class="footer-col">
-          <span class="ui-eyebrow">Follow on</span>
+          <span class="ui-eyebrow" v-high="{ delay: 100 }">Follow on</span>
           <a class="roll-host" href="https://github.com/AwayC/" target="_blank" rel="noopener noreferrer"><RollText text="GitHub" /></a>
           <a class="roll-host" href="https://space.bilibili.com/470833519" target="_blank" rel="noopener noreferrer"><RollText text="Bilibili" /></a>
         </div>
@@ -141,20 +141,6 @@ export default {
   display: block;
   overflow: hidden;
   padding-bottom: 0.06em;
-}
-
-.st-row > span {
-  display: inline-block;
-  transform: translateY(105%);
-  transition: transform 1.1s var(--ease-out);
-}
-
-.is-inview .st-row > span {
-  transform: none;
-}
-
-.is-inview .st-row:nth-child(2) > span {
-  transition-delay: 0.12s;
 }
 
 .st-sans {

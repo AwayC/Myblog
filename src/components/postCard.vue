@@ -188,7 +188,7 @@ export default {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: grayscale(1) brightness(0.7) contrast(1.05);
+    filter: none;
     transform: scale(1.02);
     transition: filter 0.6s ease, transform 1s var(--ease-out);
 }

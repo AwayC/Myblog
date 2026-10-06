@@ -134,3 +134,19 @@ a {
     transition: none;
   }
 }
+
+/* v-high 文字出场的色块层（src/directives/highlight.js） */
+.high-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.high-block {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform, width;
+}

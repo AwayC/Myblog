@@ -27,6 +27,8 @@ import AwayMark from './AwayMark.vue';
 import { registerCurtain } from '@/transition';
 
 const COLS = 7;
+// 竖条上下各挂着 18px 的台阶装饰：移出屏幕时要多走这段距离，否则会在屏幕边缘留下一截“头”
+const STEP = 24;
 
 export default {
   name: 'TransitionCurtain',
@@ -44,7 +46,7 @@ export default {
   mounted() {
     document.documentElement.classList.add('is-covered');
     // 首次加载：幕布一开始就是盖住的
-    gsap.set(this.$refs.col, { yPercent: 0 });
+    gsap.set(this.$refs.col, { yPercent: 0, y: 0 });
     registerCurtain({
       cover: this.cover,
       reveal: this.reveal,
@@ -57,7 +59,7 @@ export default {
       if (document.hidden) {
         document.documentElement.classList.add('is-covered');
         gsap.set(this.$refs.root, { visibility: 'visible' });
-        gsap.set(this.$refs.col, { yPercent: 0 });
+        gsap.set(this.$refs.col, { yPercent: 0, y: 0 });
         return Promise.resolve();
       }
       return new Promise((resolve) => {
@@ -70,11 +72,12 @@ export default {
         const cols = this.$refs.col;
         gsap.killTweensOf([cols, this.$refs.center, this.$refs.foot]);
         gsap.set(this.$refs.root, { visibility: 'visible' });
-        gsap.set(cols, { yPercent: 100 });
+        gsap.set(cols, { yPercent: 100, y: STEP });
         gsap.set([this.$refs.center, this.$refs.foot], { opacity: 0 });
         gsap.timeline({ onComplete: resolve })
           .to(cols, {
             yPercent: 0,
+            y: 0,
             duration: 0.55,
             ease: 'power3.inOut',
             stagger: { each: 0.045, from: 'start' },
@@ -85,7 +88,7 @@ export default {
     },
     reveal() {
       if (document.hidden) {
-        gsap.set(this.$refs.col, { yPercent: -100 });
+        gsap.set(this.$refs.col, { yPercent: -100, y: -STEP });
         gsap.set(this.$refs.root, { visibility: 'hidden' });
         document.documentElement.classList.remove('is-covered');
         window.dispatchEvent(new CustomEvent('away:reveal'));
@@ -107,6 +110,7 @@ export default {
           })
           .to(cols, {
             yPercent: -100,
+            y: -STEP,
             duration: 0.75,
             ease: 'expo.inOut',
             stagger: { each: 0.05, from: 'end' },

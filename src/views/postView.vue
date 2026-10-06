@@ -14,37 +14,35 @@
             <RollText text="Journal" />
           </router-link>
           <span class="post-eyebrow-line"></span>
-          <span class="post-eyebrow-num">N° {{ String(post.id).padStart(2, '0') }}</span>
+          <span class="post-eyebrow-num" v-high="{ key: post.id }">N° {{ String(post.id).padStart(2, '0') }}</span>
         </div>
 
         <div class="title">
-          <typeWord>
-            <h1>
-              {{ post.name }}
-            </h1>
-          </typeWord>
+          <h1 v-high="{ key: post.id, delay: 120 }">
+            {{ post.name }}
+          </h1>
         </div>
 
-        <p v-if="post.summary" class="post-lead">
+        <p v-if="post.summary" class="post-lead" v-high="{ color: 'soft', key: post.id, delay: 300 }">
           <span class="ui-serif">“</span>{{ post.summary }}<span class="ui-serif">”</span>
         </p>
 
         <!-- 像原站 On Track 页的数据格 -->
         <div class="post-cells">
           <div class="cell">
-            <span class="cell-label">Published</span>
+            <span class="cell-label" v-high="{ key: post.id, delay: 380 }">Published</span>
             <span class="cell-value">{{ post.time }}</span>
           </div>
           <div class="cell">
-            <span class="cell-label">Reading</span>
+            <span class="cell-label" v-high="{ key: post.id, delay: 450 }">Reading</span>
             <span class="cell-value">{{ readingMinutes }}<small>min</small></span>
           </div>
           <div class="cell">
-            <span class="cell-label">Words</span>
+            <span class="cell-label" v-high="{ key: post.id, delay: 520 }">Words</span>
             <span class="cell-value">{{ wordCount }}</span>
           </div>
           <div class="cell views">
-            <span class="cell-label">
+            <span class="cell-label" v-high="{ key: post.id, delay: 590 }">
               <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-eye" width="13" height="13" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <circle cx="12" cy="12" r="2" />
@@ -55,7 +53,7 @@
             <span class="cell-value">{{ views }}</span>
           </div>
           <div class="cell cell-tags">
-            <span class="cell-label">Tags</span>
+            <span class="cell-label" v-high="{ key: post.id, delay: 660 }">Tags</span>
             <div class='tags'>
               <tagBase v-for='tag in post.tags' :key="tag.name" :style="{backgroundColor: getTagColor(tag)}">
                 {{tag.name}}
@@ -81,7 +79,7 @@
             <span class="rail-year">{{ postYear }}</span>
           </div>
           <div class="rail-progress">
-            <span class="ui-eyebrow">Progress</span>
+            <span class="ui-eyebrow" v-high="{ key: post.id }">Progress</span>
             <span class="rail-pct">{{ Math.round(readProgress * 100) }}<small>%</small></span>
           </div>
         </aside>
@@ -90,13 +88,13 @@
           <div class="markdown-body" v-html="safeContent"></div>
           <div class="content-end">
             <span class="end-mark"></span>
-            <span class="ui-eyebrow">End of transmission</span>
+            <span class="ui-eyebrow" v-high="{ key: post.id }">End of transmission</span>
             <span class="end-mark"></span>
           </div>
         </article>
 
         <aside class="toc-sidebar" v-if="headings.length > 0">
-          <h3><span>内容导航</span><span class="toc-en">Contents</span></h3>
+          <h3 v-high="{ key: post.id }"><span>内容导航</span><span class="toc-en">Contents</span></h3>
           <ul>
             <li v-for="heading in headings" :key="heading.id"
                 :class="{ 'active': activeHeadingId === heading.id, [`level-${heading.level}`]: true }">
@@ -110,7 +108,7 @@
 
       <!-- ============ 结尾 ============ -->
       <section class="post-outro">
-        <h2 class="outro-statement">
+        <h2 class="outro-statement" v-high="{ key: post.id }">
           <span class="o-sans">Thanks for</span>
           <span class="o-serif">reading</span><span class="o-sans">.</span>
         </h2>
@@ -119,13 +117,13 @@
           <div class="pre-page" v-if="prevPost">
             <div class="card" @click="goToPost(prevPost.id)">
               <span class="arrow">←</span>
-              <div class="page-label">上一篇 / Previous</div>
+              <div class="page-label" v-high="{ key: post.id }">上一篇 / Previous</div>
               <div class="page-title">{{ prevPost.name }}</div>
             </div>
           </div>
           <div class="next-page" v-if="nextPost">
             <div class="card" @click="goToPost(nextPost.id)">
-              <div class="page-label">下一篇 / Next</div>
+              <div class="page-label" v-high="{ key: post.id }">下一篇 / Next</div>
               <div class="page-title">{{ nextPost.name }}</div>
               <span class="arrow">→</span>
             </div>
@@ -147,14 +145,13 @@
 
 <script>
 import DOMPurify from 'dompurify';
-import typeWord from '../components/typeWord.vue';
 import tagBase from '@/components/tagBase.vue';
 import router from '@/router/index'; 
+import { highlight, release } from '@/directives/highlight';
 
 export default {
     name: 'postView', 
     components: { 
-      typeWord, 
       tagBase,
     },
     data() {
@@ -371,6 +368,11 @@ export default {
         const contentContainer = this.$el.querySelector('.markdown-body');
         if (!contentContainer) return;
 
+        // 正文标题也用原站的色块刷出
+        (this._highEls || []).forEach(release);
+        this._highEls = [...contentContainer.querySelectorAll('h2, h3')];
+        this._highEls.forEach((h) => highlight(h));
+
         contentContainer.querySelectorAll('pre').forEach(pre => {
             if (pre.querySelector('.copy-btn')) return;
             
@@ -453,6 +455,7 @@ export default {
     beforeUnmount() {
       window.removeEventListener('scroll', this.handleScroll);
       window.removeEventListener('scroll', this.onProgressScroll);
+      (this._highEls || []).forEach(release);
       
       const contentContainer = this.$el.querySelector('.markdown-body');
       if (contentContainer && this._anchorClickHandler) {
@@ -662,7 +665,7 @@ export default {
   width: 100%;
   max-height: 62vh;
   object-fit: cover;
-  filter: grayscale(0.4) brightness(0.85);
+  filter: none;
   transition: filter 0.8s ease;
 }
 

@@ -2,8 +2,8 @@
   <div class="card info-card-wrapper">
     <div class="card-body">
       <div class="card-eyebrow">
-        <span>Driver profile</span>
-        <span class="card-eyebrow-num">N°01</span>
+        <span v-high>Driver profile</span>
+        <span class="card-eyebrow-num" v-high="{ delay: 120 }">N°01</span>
       </div>
 
       <!-- 动态在线状态与头像 -->
@@ -20,7 +20,7 @@
 
       <!-- 名字与身份标签 -->
       <div class="profile-header">
-        <h2 class="profile-name">{{ profile.name || 'AWAY' }}</h2>
+        <h2 class="profile-name" v-high="{ delay: 200 }">{{ profile.name || 'AWAY' }}</h2>
         <span class="role-badge">CREATIVE DEVELOPER</span>
       </div>
 
@@ -190,7 +190,7 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(1) contrast(1.05);
+  filter: none;
   transition: filter 0.5s ease;
 }
 

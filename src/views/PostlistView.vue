@@ -8,19 +8,19 @@
     <div v-else class="journal">
       <!-- ============ HERO ============ -->
       <section class="j-hero">
-        <div class="j-eyebrow ui-eyebrow">
+        <div class="j-eyebrow ui-eyebrow" v-high>
           <span class="j-accent">N° 02 — The journal</span>
           <span class="j-line"></span>
           <span>{{ latestPost ? 'Last entry · ' + latestPost.time : 'Since 2025' }}</span>
         </div>
 
         <div class="j-hero-grid">
-          <h1 class="j-title">
+          <h1 class="j-title" v-high="{ delay: 120 }">
             <span class="j-row"><span class="j-sans">Notes</span></span>
             <span class="j-row j-row-2"><span class="j-serif">on &amp; off</span> <span class="j-sans">track</span></span>
           </h1>
           <div class="j-hero-side">
-            <p class="j-lead">
+            <p class="j-lead" v-high="{ color: 'soft', delay: 360 }">
               记录技术总结、项目架构与日常思考。<br>
               <span class="ui-serif">Code, pixels &amp; the occasional rant.</span>
             </p>
@@ -32,17 +32,17 @@
       <!-- ============ 数据 ============ -->
       <section class="j-stats">
         <div class="j-stat j-stat-big">
-          <span class="j-stat-label">Posts<br>published</span>
-          <span class="j-stat-num">{{ posts.length }}</span>
+          <span class="j-stat-label" v-high>Posts<br>published</span>
+          <span class="j-stat-num" v-high="{ color: 'soft', delay: 150 }">{{ posts.length }}</span>
         </div>
         <div class="j-stat-side">
           <div class="j-stat">
-            <span class="j-stat-label">Total<br>views</span>
-            <span class="j-stat-num j-stat-mid">{{ totalViews }}</span>
+            <span class="j-stat-label" v-high="{ delay: 100 }">Total<br>views</span>
+            <span class="j-stat-num j-stat-mid" v-high="{ color: 'soft', delay: 250 }">{{ totalViews }}</span>
           </div>
           <div class="j-stat">
-            <span class="j-stat-label">Tags &amp;<br>seasons</span>
-            <span class="j-stat-num j-stat-mid">{{ tagNames.length }}<sup>/{{ archive.length }}</sup></span>
+            <span class="j-stat-label" v-high="{ delay: 200 }">Tags &amp;<br>seasons</span>
+            <span class="j-stat-num j-stat-mid" v-high="{ color: 'soft', delay: 350 }">{{ tagNames.length }}<sup>/{{ archive.length }}</sup></span>
           </div>
         </div>
       </section>
@@ -201,8 +201,8 @@
       <!-- ============ 归档（像 F1 赛季成绩表） ============ -->
       <section class="j-archive" v-if="archive.length">
         <div class="j-archive-head">
-          <h2 class="j-archive-title"><span class="j-sans">Archive</span> <span class="j-serif">by season</span></h2>
-          <span class="ui-eyebrow">{{ posts.length }} entries · {{ totalViews }} views</span>
+          <h2 class="j-archive-title" v-high><span class="j-sans">Archive</span> <span class="j-serif">by season</span></h2>
+          <span class="ui-eyebrow" v-high="{ delay: 150 }">{{ posts.length }} entries · {{ totalViews }} views</span>
         </div>
         <table class="j-table">
           <thead>
@@ -228,6 +228,7 @@ import tagBase from '../components/tagBase.vue';
 import infoCard from '../components/infoCard.vue';
 import {gsap} from 'gsap'; 
 import router from '@/router/index';
+import { replay } from '@/directives/highlight';
 
 export default { 
     name: "PostlistView", 
@@ -316,6 +317,52 @@ export default {
       }
     },
     methods: {
+      startLaneParallax() {
+        if (this._lane) return;
+        const st = { raf: 0, cur: new WeakMap() };
+        st.onScroll = () => {
+          if (!st.raf) st.raf = requestAnimationFrame(this.updateLaneParallax);
+        };
+        this._lane = st;
+        window.addEventListener('scroll', st.onScroll, { passive: true });
+        window.addEventListener('resize', st.onScroll);
+        st.onScroll();
+      },
+      stopLaneParallax() {
+        const st = this._lane;
+        if (!st) return;
+        window.removeEventListener('scroll', st.onScroll);
+        window.removeEventListener('resize', st.onScroll);
+        cancelAnimationFrame(st.raf);
+        this._lane = null;
+      },
+      updateLaneParallax() {
+        const st = this._lane;
+        if (!st) return;
+        st.raf = 0;
+        const grid = this.$el && this.$el.querySelector && this.$el.querySelector('.j-grid');
+        if (!grid) return;
+        const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length;
+        // 每列的位移幅度（px）：中间列最快，第三列次之，第一列不动
+        const amps = cols >= 3 ? [0, 90, 45] : cols === 2 ? [0, 70] : [0];
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const r = grid.getBoundingClientRect();
+        const vh = window.innerHeight;
+        // 网格顶部刚进入视口底部时为 -1，网格底部离开视口顶部时为 1
+        const p = Math.max(-1, Math.min(1, ((vh - r.top) / (vh + r.height)) * 2 - 1));
+        let moving = false;
+        Array.from(grid.children).forEach((el, i) => {
+          const target = reduce ? 0 : -p * (amps[i % cols] || 0);
+          const prev = st.cur.has(el) ? st.cur.get(el) : target;
+          // 缓动跟随：各列“拖着”追上，形成错位感
+          const next = prev + (target - prev) * 0.12;
+          st.cur.set(el, next);
+          if (Math.abs(target - next) > 0.3) moving = true;
+          // 用独立的 translate 属性，不和入场动画（gsap 的 transform）冲突
+          el.style.translate = `0 ${next.toFixed(2)}px`;
+        });
+        if (moving) st.raf = requestAnimationFrame(this.updateLaneParallax);
+      },
       yearOf(post) {
         const m = String((post && post.time) || '').match(/\d{4}/);
         return m ? m[0] : '';
@@ -477,7 +524,27 @@ export default {
         console.error("加载数据失败:", error);
         this.isLoading = false;
       }
-    }
+    },
+    // ---- 卡片网格的“错位滚动”：每一列以不同速度跟随滚动（纯展示效果） ----
+    // 页面被 keep-alive 缓存，所以在 activated / deactivated 里开关监听
+    activated() {
+      this.startLaneParallax();
+      replay(this.$el);
+    },
+    deactivated() {
+      this.stopLaneParallax();
+    },
+    beforeUnmount() {
+      this.stopLaneParallax();
+    },
+    watch: {
+      paginatedPosts() {
+        this.$nextTick(() => this._lane && this._lane.onScroll());
+      },
+      isLoading() {
+        this.$nextTick(() => this._lane && this._lane.onScroll());
+      },
+    },
 }
 </script>
 
@@ -570,22 +637,8 @@ export default {
   padding-bottom: 0.04em;
 }
 
-.j-row > span {
-  display: inline-block;
-  animation: j-rise 1.1s var(--ease-out) both;
-}
-
-.j-row-2 > span {
-  animation-delay: 0.08s;
-}
-
 .j-row-2 .j-serif {
   font-size: 0.92em;
-}
-
-@keyframes j-rise {
-  from { transform: translateY(105%); }
-  to { transform: none; }
 }
 
 .j-hero-side {

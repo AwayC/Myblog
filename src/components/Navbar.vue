@@ -97,9 +97,27 @@
 
 <script>
 import AwayMark from './AwayMark.vue';
-import avatar from '@/assets/Away.jpg';
 
-const TEX = `${process.env.BASE_URL || '/'}helmet/textures/`;
+const BASE = process.env.BASE_URL || '/';
+
+// 菜单图片可在 public/menu/tiles.json 里改（图片放 public/menu/）
+const TILES_URL = `${BASE}menu/tiles.json`;
+const DEFAULT_TILES = {
+  Home: { image: 'menu/home.webp', size: '320%', position: '22% 18%' },
+  Posts: { image: 'menu/posts.webp', size: '260%', position: '78% 62%' },
+  Friends: { image: 'menu/friends.jpg', size: 'cover', position: 'center' },
+  Cube: { image: 'menu/cube.webp', size: 'cover', position: 'center' },
+};
+
+function tileStyle(t) {
+  if (!t || !t.image) return {};
+  const src = /^(https?:)?\/\/|^\/|^data:/.test(t.image) ? t.image : BASE + t.image;
+  return {
+    backgroundImage: `url("${src}")`,
+    backgroundSize: t.size || 'cover',
+    backgroundPosition: t.position || 'center',
+  };
+}
 
 export default {
   name: 'NavBar',
@@ -110,15 +128,19 @@ export default {
       scrolled: false,
       hovered: -1,
       tilt: { x: 0, y: 0 },
-      allLinks: [
-        { to: '/', label: 'Home', name: 'home', tileStyle: { backgroundImage: `url(${TEX}helmet-orange-dark.webp)`, backgroundSize: '320%', backgroundPosition: '22% 18%' } },
-        { to: '/Postlist', label: 'Posts', name: ['Postlist', 'post'], tileStyle: { backgroundImage: `url(${TEX}helmet-orange.webp)`, backgroundSize: '260%', backgroundPosition: '78% 62%' } },
-        { to: '/friends', label: 'Friends', name: 'friends', tileStyle: { backgroundImage: `url(${avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' } },
-        { href: './page/cube/index.html', label: 'Cube', external: true, tileStyle: { backgroundImage: `url(${TEX}disco-matcap.webp)`, backgroundSize: 'cover', backgroundPosition: 'center' } },
+      tiles: DEFAULT_TILES,
+      links: [
+        { to: '/', label: 'Home', name: 'home' },
+        { to: '/Postlist', label: 'Posts', name: ['Postlist', 'post'] },
+        { to: '/friends', label: 'Friends', name: 'friends' },
+        { href: './page/cube/index.html', label: 'Cube', external: true },
       ],
     };
   },
   computed: {
+    allLinks() {
+      return this.links.map((l) => ({ ...l, tileStyle: tileStyle(this.tiles[l.label]) }));
+    },
     currentIndex() {
       return this.allLinks.findIndex((l) => this.isCurrent(l));
     },
@@ -142,6 +164,7 @@ export default {
     window.addEventListener('scroll', this.onScroll, { passive: true });
     window.addEventListener('keydown', this.onKey);
     this.onScroll();
+    this.loadTiles();
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.onScroll);
@@ -153,6 +176,20 @@ export default {
       if (!item.name) return false;
       const names = Array.isArray(item.name) ? item.name : [item.name];
       return names.includes(this.$route.name);
+    },
+    async loadTiles() {
+      try {
+        const res = await fetch(TILES_URL, { cache: 'no-cache' });
+        if (!res.ok) return;
+        const conf = await res.json();
+        const tiles = { ...DEFAULT_TILES };
+        Object.keys(tiles).forEach((k) => {
+          if (conf[k] && conf[k].image) tiles[k] = { ...tiles[k], ...conf[k] };
+        });
+        this.tiles = tiles;
+      } catch (e) {
+        // 配置读不到就用默认图
+      }
     },
     toggle() {
       this.open = !this.open;

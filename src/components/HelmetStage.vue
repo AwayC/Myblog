@@ -158,6 +158,7 @@ function createWireMaterial(uniforms, { strength = 1, own = false } = {}) {
       uTime: uniforms.uTime,
       uWire: own ? { value: 1 } : uniforms.uWire,
       uColor: { value: ACCENT.clone() },
+      uDisco: uniforms.uLiveryMix, // 跟着涂装一起 2 秒切到 disco 配色
       uStrength: { value: strength },
     },
     vertexShader: `
@@ -171,13 +172,29 @@ function createWireMaterial(uniforms, { strength = 1, own = false } = {}) {
       uniform float uTime;
       uniform float uWire;
       uniform vec3 uColor;
+      uniform float uDisco;
       uniform float uStrength;
       varying float vY;
+
+      // disco：青 → 紫 → 粉的镭射渐变，和 disco 头盔的棱面反光、字标的 disco 光同一组颜色
+      vec3 holo(float t) {
+        vec3 cyan = vec3(0.0, 0.85, 1.0);
+        vec3 violet = vec3(0.49, 0.3, 1.0);
+        vec3 pink = vec3(1.0, 0.24, 0.6);
+        t = fract(t) * 3.0;
+        if (t < 1.0) return mix(cyan, violet, smoothstep(0.0, 1.0, t));
+        if (t < 2.0) return mix(violet, pink, smoothstep(1.0, 2.0, t));
+        return mix(pink, cyan, smoothstep(2.0, 3.0, t));
+      }
+
       void main() {
         // 自上而下扫过的光带
         float scan = pow(fract(-vY * 9.0 - uTime * 0.45), 5.0);
         float a = (0.035 + scan * 0.6) * uWire * uStrength;
-        gl_FragColor = vec4(uColor * (0.6 + scan * 1.6), a);
+        vec3 base = uColor * (0.6 + scan * 1.6);
+        // disco 时光带的峰值偏白，像镜面球上的高光
+        vec3 disco = holo(vY * 2.2 - uTime * 0.12) * (0.6 + scan * 1.2) + vec3(scan * 0.25);
+        gl_FragColor = vec4(mix(base, disco, uDisco), a);
       }
     `,
   });
@@ -796,11 +813,6 @@ export default {
       u.uTime.value = time;
       const discoActive = t.discoOn || u.uReveal.value > 0.001;
       if (t.disco) t.disco.visible = discoActive;
-      // 左下角的小线框头盔：disco 时变成彩色
-      if (t.miniWire) {
-        if (t.discoOn) t.miniWire.uniforms.uColor.value.setHSL((time * 0.15) % 1, 1, 0.6);
-        else t.miniWire.uniforms.uColor.value.copy(ACCENT);
-      }
 
       const { renderer } = t;
       // 主场景 → 离屏 → 辉光 → 屏幕

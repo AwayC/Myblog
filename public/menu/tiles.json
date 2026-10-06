@@ -1,0 +1,7 @@
+{
+  "_说明": "导航菜单左侧的四张图。替换本目录里的图片，或把 image 改成别的路径（相对网站根目录，也可以是完整网址）。size / position 对应 CSS 的 background-size / background-position，用来裁切画面：cover 铺满，百分比越大放得越大。",
+  "Home": { "image": "menu/home.webp", "size": "320%", "position": "22% 18%" },
+  "Posts": { "image": "menu/posts.webp", "size": "260%", "position": "78% 62%" },
+  "Friends": { "image": "menu/friends.jpg", "size": "cover", "position": "center" },
+  "Cube": { "image": "menu/cube.webp", "size": "cover", "position": "center" }
+}

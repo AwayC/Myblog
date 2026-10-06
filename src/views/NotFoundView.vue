@@ -16,12 +16,12 @@
 
     <div class="nf-bottom">
       <div class="nf-heading">
-        <h1 class="nf-title">PAGE NOT FOUND</h1>
-        <p class="nf-sub"><span class="nf-sub-zh">糟糕！偏离赛道了</span> <span class="ui-serif">veered off track</span></p>
+        <h1 class="nf-title" v-high="{ delay: 400 }">PAGE NOT FOUND</h1>
+        <p class="nf-sub" v-high="{ color: 'soft', delay: 550 }"><span class="nf-sub-zh">糟糕！偏离赛道了</span> <span class="ui-serif">veered off track</span></p>
       </div>
 
       <!-- 幽默段子 -->
-      <p class="nf-quote">“{{ currentJoke }}”</p>
+      <p class="nf-quote" v-high="{ color: 'soft', delay: 700, key: currentJoke }">“{{ currentJoke }}”</p>
 
       <!-- 核心按钮组 -->
       <div class="button-group">

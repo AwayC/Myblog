@@ -10,11 +10,13 @@
       <div class="wordmark-half wordmark-left">
         <span class="wm-base">AW</span>
         <span class="wm-lit" ref="litL">AW</span>
+        <span class="wm-lit wm-disco" ref="discoL">AW</span>
       </div>
       <div class="wordmark-gap"></div>
       <div class="wordmark-half wordmark-right">
         <span class="wm-base">AY</span>
         <span class="wm-lit" ref="litR">AY</span>
+        <span class="wm-lit wm-disco" ref="discoR">AY</span>
       </div>
     </div>
 
@@ -51,7 +53,7 @@
       </button>
 
       <div class="caption">
-        <h1 class="caption-title">
+        <h1 class="caption-title" v-high="{ delay: 1900 }">
           <span class="cap-row">Code, pixels</span>
           <span class="cap-row ui-serif">&amp; curiosity</span>
         </h1>
@@ -91,7 +93,7 @@ export default {
   },
   computed: {
     stageFill() {
-      return this.portrait ? 0.32 : 0.48;
+      return this.portrait ? 0.4 : 0.6;
     },
     stageOffset() {
       return this.portrait ? 0.04 : 0.02;
@@ -120,7 +122,7 @@ export default {
     },
     onPointerMove(e) {
       // 光斑中心换算到每个字块自己的坐标系
-      [this.$refs.litL, this.$refs.litR].forEach((el) => {
+      [this.$refs.litL, this.$refs.litR, this.$refs.discoL, this.$refs.discoR].forEach((el) => {
         if (!el) return;
         const r = el.getBoundingClientRect();
         el.style.setProperty('--hx', `${e.clientX - r.left}px`);
@@ -159,7 +161,7 @@ export default {
   font-weight: 900;
   font-stretch: 125%;
   /* 两个字块 + 中间留给头盔的空隙要放得下一屏 */
-  font-size: min(calc((100vw - 40vh) / 3.8), 40vh);
+  font-size: min(calc((100vw - 52vh) / 3.8), 40vh);
   line-height: 0.8;
   letter-spacing: -0.04em;
   opacity: 0;
@@ -173,7 +175,7 @@ export default {
 }
 
 .wordmark-gap {
-  flex: 0 0 40vh;
+  flex: 0 0 52vh;
 }
 
 .wm-base,
@@ -192,10 +194,14 @@ export default {
     drop-shadow(0 -1px 0 rgba(242, 240, 233, 0.07));
 }
 
-/* 被光照亮的那一层：用光标位置做径向遮罩 */
+/* 被光照亮的那一层：用光标位置做径向遮罩。
+   字形会超出行框（line-height 0.8 + 负字距），而背景只画在元素盒子里，W / Y 的右上角会被裁掉；
+   这里把盒子向四周撑大，再用等量 padding 抵消，文字位置不变。 */
 .wm-lit {
   position: absolute;
-  inset: 0;
+  inset: -0.25em -0.3em -0.2em -0.15em;
+  padding: 0.25em 0.3em 0.2em 0.15em;
+  transition: opacity 1.8s cubic-bezier(0.65, 0, 0.35, 1);
   color: transparent;
   --hx: -100vw;
   --hy: -100vh;
@@ -204,11 +210,21 @@ export default {
   background-clip: text;
 }
 
-.is-disco .wm-lit {
+/* disco 光照：单独一层，切换时和橙色光照交叉淡入淡出，跟头盔 2 秒的过渡同步 */
+.wm-disco {
+  opacity: 0;
   background: radial-gradient(circle 30vmax at var(--hx) var(--hy), #ff3d9a 0%, #7c4dff 35%, rgba(0, 200, 255, 0.15) 75%);
   -webkit-background-clip: text;
   background-clip: text;
   animation: home-hue 3s linear infinite;
+}
+
+.is-disco .wm-disco {
+  opacity: 1;
+}
+
+.is-disco .wm-lit:not(.wm-disco) {
+  opacity: 0;
 }
 
 @keyframes home-hue {
@@ -245,6 +261,8 @@ export default {
 }
 
 .is-ready .home-ui > :nth-child(1) { transition-delay: 2.2s; }
+/* 中间标题不淡入，改用原站的色块逐行刷出（v-high） */
+.home-ui > .caption { opacity: 1; transform: none; transition: none; }
 .is-ready .home-ui > :nth-child(2) { transition-delay: 1.9s; }
 .is-ready .home-ui > :nth-child(3) { transition-delay: 2.4s; }
 
@@ -395,7 +413,7 @@ export default {
   }
 
   .wordmark-gap {
-    flex: 0 0 36vh;
+    flex: 0 0 44vh;
   }
 }
 
@@ -419,7 +437,7 @@ export default {
 }
 
 @media (hover: none) {
-  .wm-lit {
+  .wm-lit:not(.wm-disco) {
     background: radial-gradient(circle 40vmax at 50% 30%, #ff8a1a 0%, #b34f00 30%, rgba(90, 40, 0, 0) 70%);
     -webkit-background-clip: text;
     background-clip: text;

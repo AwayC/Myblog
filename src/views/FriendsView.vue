@@ -5,14 +5,14 @@
       <!-- 头部 Header -->
       <div class="friends-header">
         <div class="friends-eyebrow ui-eyebrow">
-          <span>N° 03 — Paddock</span>
-          <span>{{ String(blogs.length).padStart(2, '0') }} friends</span>
+          <span v-high>N° 03 — Paddock</span>
+          <span v-high="{ delay: 150 }">{{ String(blogs.length).padStart(2, '0') }} friends</span>
         </div>
-        <h1 class="page-title">
+        <h1 class="page-title" v-high="{ delay: 120 }">
           <span class="page-title-main">Friends</span>
           <span class="page-title-alt ui-serif">fellow drivers</span>
         </h1>
-        <p class="page-subtitle">
+        <p class="page-subtitle" v-high="{ color: 'soft', delay: 360 }">
           海内存知己，天涯若比邻。欢迎交流与分享技术心得。
         </p>
       </div>
@@ -59,8 +59,8 @@
       <!-- 申请友链：展示本站信息，方便对方复制 -->
       <section class="join">
         <div class="join-head">
-          <h2 class="join-title"><span class="join-sans">Join</span> <span class="join-serif">the grid</span></h2>
-          <p class="join-text">欢迎交换友链～ 把下面的信息加到你的站点，然后在 GitHub 或 B 站联系我。</p>
+          <h2 class="join-title" v-high><span class="join-sans">Join</span> <span class="join-serif">the grid</span></h2>
+          <p class="join-text" v-high="{ color: 'soft', delay: 240 }">欢迎交换友链～ 把下面的信息加到你的站点，然后在 GitHub 或 B 站联系我。</p>
         </div>
         <div class="join-card">
           <div class="join-row"><span>Name</span><b>AWAY's Studio</b></div>
@@ -250,7 +250,7 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(0.4);
+  filter: none;
   transition: filter 0.4s;
 }
 

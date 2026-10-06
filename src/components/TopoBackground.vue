@@ -321,7 +321,8 @@ export default {
       s.speed += (Math.min(v * 28, 1) - s.speed) * 0.25;
       s.hover += (s.hoverTarget - s.hover) * 0.05;
       s.reveal += (s.revealTarget - s.reveal) * 0.022;
-      s.disco += (s.discoTarget - s.disco) * 0.04;
+      // 约 2 秒淡入淡出，和头盔的 disco 过渡同步
+      s.disco += (s.discoTarget - s.disco) * 0.022;
 
       // 1. 更新轨迹（ping-pong）
       gl.useProgram(s.trail.p);
